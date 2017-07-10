@@ -72,7 +72,7 @@ Intermediate conclusions and take-away messages are highlighted in \textbf{bold}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Generalities}
 
-Let's consider $\delta_k = \delta(k)$ a complex-valued Gaussian random field / Gaussian process with zero mean and diagonal covariance kernel $P_{k}$, also called the power spectrum. In other words,
+Let's consider $\delta_k = \delta(k)$ a complex-valued Gaussian random field with zero mean and diagonal covariance kernel $P_{k}$, also called the power spectrum. In other words,
 \equ{
 	\mathrm{Real}[\delta_k] \sim \mathcal{N}(0, P_k/2) \quad \quad \mathrm{Imag}[\delta_k] \sim \mathcal{N}(0, P_k/2) \label{eq:p_delta}
 }
@@ -81,18 +81,14 @@ Note that the modulus $|\delta_k|^2 = \delta_k \delta_k^*$ follows a zero-mean G
 
 The $k$ index/variable will implicitly refer to the $k$th Fourier mode, since we want to establish an analogy and for instance identify $\delta$ to the cosmological matter density field. However, we remain fairly general in most of this discussion.
 
-By construction, we set $\mathrm{Cov}[\delta_k, \delta_{k'}] = 0$ for $k\neq k'$. We also introduced a convenient reduced complex-valued random variable $x_k$ such that
-\equ{
-	\mathrm{Real/Imag}[x_k] = \frac{\mathrm{Real/Imag}[\delta_k] }{ \sqrt{P_k/2}} \sim \mathcal{N}(0, 1)
-}
-where $\mathrm{Real/Imag}$ simply means that we do that for both component of the complex number.
+By construction, we set $\mathrm{Cov}[\delta_k, \delta_{k'}] = 0$ for $k\neq k'$. We also introduce a convenient reduced complex-valued random variable $x_k = \frac{\delta_k}{\sqrt{P_k/2}}$, the real and imaginary parts of which follow standard Gaussian distributions $\mathcal{N}(0, 1)$.
+
 Let us write down Monte Carlo estimators of the power spectrum and its covariance, i.e., estimators based on random draws of $\delta$ (the random draws are assumed to be in our control, not from an existing or predefined set). The simplest estimator will involve $N_k$ independent draws of the $k$th mode, $\delta_{k,p}$ with $p=1, \cdots, N_k$ from \equref{eq:p_delta}. 
 
 The unbiased estimator for the power spectrum (assuming we know the mean is zero) is
 \eqn{
 	\hat{P}_{k} = \frac{1}{N_k} \sum_{p=1}^{N_k} |\delta_{k,p}|^2 =\frac{P_k}{N_k } \underbrace{\sum_{p=1}^{N_k} |x_{k,p}|^2 }_{\hat{\sigma}_k}
 }
-%The extra $i$ subscript is to make sure we agree with the notation adopted below, where we repeat the $N_k$ draw many times, and each draw is indexed with $i$.
 Since the $x_k$'s are standard normal random variables, $\hat{\sigma}_k$ follows a chi-squared distribution with $N_k$ degrees of freedom, $\hat{\sigma}_k \sim \chi^2(N_k)$. 
 Thus, $\hat{P}_{k} \sim \frac{P_k}{N_k }  \chi^2(N_k)$, with the mean value being $P_k$, demonstrating that the previous estimator is unbiased.
 
@@ -107,7 +103,7 @@ In our simple setup, we know that the $k$ modes are uncorrelated, so we have
 where $ \delta^D$ is the Dirac delta. Yet, we want to estimate this covariance via Monte Carlo.
 A concrete example is the estimation of the covariance of the power spectrum in a density field evolved from Gaussian initial conditions, which is a fairly standard setup in cosmology.
 Hence, we introduce another set of draws: we repeat our experiment (drawing $N_k$ modes) $N$ times. The estimator from the $i$th draw is denoted by $\hat{P}_{k, i}$. 
-At this stage, we assume they are uncorrelated, \ie, $\mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k, j}] = 0$ if $i\neq j$.
+At this stage, we assume they are uncorrelated, \ie $\mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k, j}] = 0$ if $i\neq j$.
 
 In the case of galaxy survey analyses in cosmology, we would generate $N$ random Gaussian initial conditions and evolve them in an $N$-body fashion. Each 3D Fourier mode is estimated from $N_k$ modes.
 
@@ -121,18 +117,18 @@ We can either assume that the mean is know and set $\bar{P}_{k}=P_k$, in which c
 }
 in which case we must set $\nu=N-1$. In what follows, we will consider this latter case. 
 
-We also know that if each $\hat{P}_{k, i}$ was Gaussian, $\hat{C}_{kk'} (N-1)$ would follow a Wishard distribution REF. It is unbiased, so the mean is the true $C_{kk'}$, and its variance is
+We also know that if each $\hat{P}_{k, i}$ was Gaussian, $\hat{C}_{kk'} (N-1)$ would follow a Wishard distribution. It is unbiased, so the mean is the true $C_{kk'}$, and its variance is
 \eqn{
 	\mathrm{Cov}[\hat{C}_{ij} \hat{C}_{kl}] = \frac{C_{ij}C_{kl} + C_{ik}C_{jl}}{N-1}
 }
-This assumption is pretty accurate as soon as $N_k>50$, because the chi-squared distribution is then very well approximated by a Gaussian (but still assuming that $\delta$ is Gaussian of course!). 
+This assumption is pretty accurate as soon as $N_k>50$, because the chi-squared distribution is then very well approximated by a Gaussian (but still assuming that $\delta$ is Gaussian!). 
 We will make that assumption for the derivations below.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Three problems}
 
-First, we see that the scaling of the standard MC covariance estimator is $(N-1)^{-1}$, which is exceptionally bad.
+First, we see that the scaling of the standard MC covariance estimator is $(N-1)^{-1}$.
 This is a fairly standard result in statistics, and there are numerous strategies to decrease this scaling. 
 We will go through some of those below.
 
@@ -153,17 +149,15 @@ Let us relax one of the previous assumptions and introduce correlated draws, \ie
 \eqn{
 	\mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', j}] \ = \ \mathbb{E}[\hat{P}_{k, i}\hat{P}_{k', j}] - \mathbb{E}[\hat{P}_{k, i}]\mathbb{E}[\hat{P}_{k', j}]  \ =  \ C_{kk'} \left( \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} \right)
 }
-where $\delta^K$ is Kronecker's delta. This slightly complicated expression is to recover $C_{kk'}$ at $i=j$ and $\beta_{ij}C_{kk'}$ at $i\neq j$. In other words, the correlation coefficient is simply $\beta_{ij}$. The only condition we must impose is that the full correlation matrix (constructed with the $\beta_{ij}$s) is symmetric positive definite. In particular, we note that if we take $\beta_{ij}=\beta$, we must have $\beta > -1/(N-1)$
+where $\delta^K$ is Kronecker's delta. This slightly complicated expression is to recover $C_{kk'}$ at $i=j$ and $\beta_{ij}C_{kk'}$ at $i\neq j$. In other words, the correlation coefficient is simply $\beta_{ij}$. The only condition we must impose is that the full correlation matrix (constructed with the $\beta_{ij}$s) is symmetric positive definite. In particular, we note that if we take $\beta_{ij}=\beta$, we must have $\beta > -1/(N-1)$. This condition will be obvious when we study the estimators below.
 
 We will now compute the covariance of the sample estimator, on the diagonal only (we only consider $\mathrm{Cov}[\hat{C}_{kk'}\hat{C}_{lm}]$ for $l=k, k'=m$):
 \eqn{
-	\mathrm{Var}[\hat{C}_{kk'}] \ =\   \frac{1}{(N-1)^2} \mathrm{Var}\left[ \hat{C}_{kk',i}  \right]  
-	\ = \   \frac{1}{(N-1)^2}\sum_{i=1}^{N}\sum_{j=1}^{N} \mathrm{Cov}[\hat{C}_{kk',i} , \hat{C}_{kk',j} ]
+	\mathrm{Var}[\hat{C}_{kk'}] \ =\    \frac{1}{(N-1)^2}\sum_{i=1}^{N}\sum_{j=1}^{N} \mathrm{Cov}[\hat{C}_{kk',i} , \hat{C}_{kk',j} ]
 }
 After a rather long derivation presented in \appref{sec:samplecovariancecorrelateddraws}, we obtain
 \eqn{
-	&&  \ \mathrm{Var}[\hat{C}_{kk'}] \ = \frac{
-	 A_0   +	  A_0^\prime  - A_2 - A_2^\prime}{(N-1)^2}  =    \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) \times s_N
+	&&  \ \mathrm{Var}[\hat{C}_{kk'}] \ =    \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) \times s_N
 }
 with the scaling term 
 \eqn{
@@ -184,7 +178,7 @@ with the bias
 If $b_N\neq 1$, the estimator is biased, so we must apply a correction factor to $\hat{C}_{kk'}$.
 The variance of the de-biased estimator is
 \eqn{
-	 \mathrm{Var}\left[ \frac{\hat{C}_{kk'}}{b_N}\right]  = \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) s_N^\prime  \label{ref:samplecovariancevariance}
+	 \mathrm{Var}\left[ \frac{\hat{C}_{kk'}}{b_N}\right]  = \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) \times s_N^\prime  \label{ref:samplecovariancevariance}
 }
 with 
 \eqn{
@@ -209,8 +203,8 @@ Finally, we check that the sample mean estimator is unbiased, $\mathbb{E}(\bar{P
 }
 \label{table:correlateddrawbiasesandvariances}
 \end{table}
-
-Our findings are summarized in Table~\ref{table:correlateddrawbiasesandvariances}. \textbf{We conclude that that 1) we can easily reduce the variance of the sample mean by adopting correlated samples, 2) this unfortunately doesn't work for the sample covariance.}
+ 
+Our findings are summarized in Table~\ref{table:correlateddrawbiasesandvariances}. \textbf{We conclude that that 1) we can easily reduce the variance of the sample mean by adopting correlated samples, 2) this unfortunately doesn't work for the sample covariance. Unlike for the sample mean, adjusting the correlations cannot cancel or even reduce the variance of the estimator.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Stratified sampling}
@@ -224,18 +218,18 @@ We then compute a final statistic with another MC estimator $g$.
 	\hat{X} &=& g\bigl(\{\hat{X}_i | i=1, \cdots M\}\bigr)
 }
 Having multiple layers of MC estimators is known as \textbf{stratified sampling}. It is a powerful variance reduction technique.
-We can simply use the results of the previous section on both $f$ and $g$.
+Let us study a few cases of interest, where we can simply use the results of the previous section on both $f$ and $g$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Stratified estimator for the mean}
 
-Both estimators are the sample mean,
+First, let us consider both estimators to be the sample mean,
 \equ{
 	\hat{X}_i = \frac{1}{N}\sum_{j=1}^N X_{ij}  \quad\quad \hat{X} =  \frac{1}{M}\sum_{i=1}^M \hat{X}_i 
 	}
 All of the samples have a mean $\mu$ and a variance $V$. It is pretty obvious that $\mathbb{E}[\hat{X}] = \mu$.
 The samples within each of the packets $i=1, \cdots M$ are correlated with a correlation coefficient $\beta$. 
-There are no correlations between packets.
+There are no correlations between packets. Thus,
 \eqn{
 	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{ij}(1-\beta) + \beta\bigr) \ 
 }
@@ -250,10 +244,9 @@ We see that the variance is cancelled if
 \eqn{
 	\beta^\mathrm{VC} \rightarrow^{>} - \ \frac{1}{N-1}
 }
-with VC as in Variance Cancellation. The arrow means that we cannot actually take $- \ \frac{1}{N-1}$ because the correlation matrix wouldn't be semi-positive definite, hence value. However, we can approach this value as much as we can.
+with VC as in Variance Cancellation. The arrow means that we cannot actually take $- \ \frac{1}{N-1}$ because the correlation matrix wouldn't be semi-positive definite, hence valid. However, we can approach this value as much as we can.
 
 The specific case of $N=2$ is known as the \textbf{antithetic estimator for the sample mean}. In this case, the optimal choice for cancelling the variance is $\beta^\mathrm{RC}=-1$, \ie perfectly anti-correlated variables. 
-This is the property exploited by \cite{PontzenEtAl2016}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Two-layer stratified estimators for the covariance}
@@ -346,7 +339,7 @@ where we have used Wick's theorem, \equref{eq:wickstheorem}. Unfortunately, to s
 %}
  
 
-We conclude that the correlation coefficient is $\left[  \frac{B^2_{ij} + G^2_{ij}}{2}  + H^2_{ij}\right]$ and is strictly positive regardless of the correlations we introduce between $\delta_{k, p, i}$ and $\delta_{k', q, j}$.
+The correlation coefficient is $\left[  \frac{B^2_{ij} + G^2_{ij}}{2}  + H^2_{ij}\right]$ and is strictly positive regardless of the correlations we introduce between $\delta_{k, p, i}$ and $\delta_{k', q, j}$.
 \textbf{We conclude that unfortunately we cannot generate anti-correlated power spectra from correlated density field draws. We could have seen this from our previous findings too.}
 
 
@@ -385,8 +378,6 @@ We can check that the measured power spectra are indeed anticorrelated:
 which is the desired property.
 
 \textbf{We conclude that by using this trick we can draw density fields that have anti-correlated power spectra, and therefore use the previous stratified estimator to reduce the variance of the sample covariance estimator.}
-
-\todo{Isn't Pk missing from variance of $\hat{P}_k$ everywhere in the previous section?}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -493,7 +484,7 @@ By differentiating, we find that the value minimizing the variance is
 Of course those covariances/correlations might not be known and may need to be estimated directly from the data, especially because $R_{kk', ij}$ is a covariance and depends on the unknown target	 covariance ${C}_{kk'}^\mathrm{fin}$.
 \todo{Discuss how to estimate unbiased $ R_{kk', ij}$ from data.}
 
-If we use a shorter notation $F_{kk',ij} = \mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}]$
+Let's derive the mean and variance of the sample covariance, using a short-cut notation $F_{kk',ij} = \mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}]$,
 \eqn{
 	\mathbb{E}[\hat{\Delta}_{kk'}] &=&  \frac{ \sum_{i}F_{kk',ii} - \frac{\sum_{ij} F_{kk',ij}}{N} } {N-1}	 \\	
 	 \mathrm{Var}\left[ \hat{\Delta}_{kk'}\right]  &=&	\frac{\sum_{ij} \bigl(F_{kk,ij}F_{k'k',ij} + F_{kk',ij}^2 \bigr) - \frac{1}{N^2}\bigl( \sum_{ij}F_{kk,ij}F_{k'k',ij} \bigr)^2 - \frac{1}{N^2}\bigl( \sum_{ij}F^2_{kk',ij} \bigr)^2 }{(N-1)^2}	
@@ -535,7 +526,7 @@ This can be simplified further by adopting $G_{ij}=B_{ij}$ or $G_{ij} = 0$, but 
 
 We have shown that:
 \begin{itemize}
-	\item If we can run simulations that have anti-correlated observables (\eg 3D power spectra), we can significantly reduce the variance of the sample mean and covariance estimators (estimating $P_k$ and its covariance). This is a generalization of the techniques described in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, which were only considering the so-called antithetic estimator of the mean.
+	\item If we can run simulations that have anti-correlated observables (\eg 3D power spectra), we can significantly reduce the variance of the sample mean and covariance estimators (estimating $P_k$ and its covariance). This is a generalization of the techniques described in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, which were partially exploiting the so-called antithetic estimator of the mean.
 	\item This variance reduction can be improved even further by considering stratified estimators, \ie running groups of correlated simulations. In the specific case of antithetic "paired" simulations as explored in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, we have derived a new estimator for the covariance matrix.
 	\item Many of our derivations assumed Gaussian random variables, but our conclusions, and in particular the variance reduction, hold for non-Gaussian random variables. Those must be studied numerically, but it is very likely (and it has been found in other studies) that the anti-correlations introduced in the initial fields remain fairly conserved as it is evolved in an N-body simulation.
 	Thus, we should be able to significantly reduce the variance of the mean and covariance estimators applied to the evolved density field (in other words, we'll need fewer simulations).
