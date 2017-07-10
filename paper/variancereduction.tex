@@ -1,0 +1,671 @@
+\documentclass{aastex6}
+
+\usepackage{graphicx}
+\usepackage[suffix=]{epstopdf}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{xspace}
+\usepackage{color}
+
+\makeatletter
+\def\env@matrix{\hskip -\arraycolsep % taken from amsmath.sty lines 895ff
+  \let\@ifnextchar\new@ifnextchar
+  \array{*{\c@MaxMatrixCols}c}}
+\makeatother
+
+\usepackage{geometry}
+\geometry{
+	tmargin=4.5cm,
+	bmargin=0.5cm,
+	lmargin=2.0cm,
+	rmargin=0.5cm
+}
+\linespread{1} % c
+
+\newcommand{\ie}{{\textit{i.e.,}~}}
+\newcommand{\eg}{{\textit{e.g.,}~}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\equref}[1]{{\xspace}Eq.~(\ref{#1})}
+\newcommand{\figref}[1]{{\xspace}Fig.~\ref{#1}}
+\newcommand{\figrefs}[2]{{\xspace}Figs.~\ref{#1}~and ~\ref{#2}}
+\newcommand{\equrefbegin}[1]{{\xspace}Equation~(\ref{#1})}
+\newcommand{\figrefbegin}[1]{{\xspace}Figure~\ref{#1}}
+\newcommand{\secref}[1]{{\xspace}Sec.~\ref{#1}}
+\newcommand{\appref}[1]{{\xspace}Appendix.~\ref{#1}}
+\renewcommand{\d}{{\mathrm{d}}}
+\newcommand{\equ}[1]{\begin{equation}#1\end{equation}}
+\newcommand{\eqn}[1]{\begin{eqnarray}#1\end{eqnarray}}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\negsp}[1]{\hspace*{-#1mm}}
+\newcommand{\ntypes}{{\mathrm{N}_\mathrm{types}}}
+\newcommand{\nobj}{{\mathrm{N}_\mathrm{obj}}}
+
+
+\newcommand{\todo}[1]{\textcolor{blue}{[TODO: #1]}}
+
+
+\begin{document}
+
+ 
+\title{Optimized simulation-based estimators for power spectra and covariance matrices} 
+\author{Boris Leistedt \textit{(send comments and add your name here!)}}
+\date{\today}
+\maketitle
+
+\vspace*{-3mm}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\textit{Monte-Carlo (MC) estimators} are widely used in cosmology to compute the mean and covariance of observables such as 3D or 2D tomographic auto and cross power spectra of the matter density field.
+However, the variance of the simplest MC estimators badly scale as $N^{-1}$ with $N$ the number of simulations, and are proportional to the power spectrum, assuming the draws are uncorrelated.
+We show how state-of-the-art \textit{Monte-Carlo variance reduction techniques} such as \textit{antithetic} and \textit{stratified estimators}, as well as \textit{control variates}, can be applied in the cosmological context to drastically reduce the variance of all simulation-based estimates of interest.
+We also show how those relate to the recent proposals of using  \textit{paired} and \textit{constrained} simulations.
+Even though most of our discussion will be about the 3D power spectrum and its covariance, we will make explicit how our results apply to other observables and their covariances, such as tomographic power spectra, bispectra, etc.
+Intermediate conclusions and take-away messages are highlighted in \textbf{bold} and summarized at the end (so go and read those if you only have a limited amount of time!).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Monte-Carlo covariance estimator with uncorrelated samples}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Generalities}
+
+Let's consider $\delta_k = \delta(k)$ a complex-valued Gaussian random field / Gaussian process with zero mean and diagonal covariance kernel $P_{k}$, also called the power spectrum. In other words,
+\equ{
+	\mathrm{Real}[\delta_k] \sim \mathcal{N}(0, P_k/2) \quad \quad \mathrm{Imag}[\delta_k] \sim \mathcal{N}(0, P_k/2) \label{eq:p_delta}
+}
+In what follows, we will use the notation $\mathcal{N}(\mu, \Sigma)$ for a uni- or multi-variate Gaussian of mean $\mu$ and (co)variance $\Sigma$.
+Note that the modulus $|\delta_k|^2 = \delta_k \delta_k^*$ follows a zero-mean Gaussian distribution of variance $P_k$.
+
+The $k$ index/variable will implicitly refer to the $k$th Fourier mode, since we want to establish an analogy and for instance identify $\delta$ to the cosmological matter density field. However, we remain fairly general in most of this discussion.
+
+By construction, we set $\mathrm{Cov}[\delta_k, \delta_{k'}] = 0$ for $k\neq k'$. We also introduced a convenient reduced complex-valued random variable $x_k$ such that
+\equ{
+	\mathrm{Real/Imag}[x_k] = \frac{\mathrm{Real/Imag}[\delta_k] }{ \sqrt{P_k/2}} \sim \mathcal{N}(0, 1)
+}
+where $\mathrm{Real/Imag}$ simply means that we do that for both component of the complex number.
+Let us write down Monte Carlo estimators of the power spectrum and its covariance, i.e., estimators based on random draws of $\delta$ (the random draws are assumed to be in our control, not from an existing or predefined set). The simplest estimator will involve $N_k$ independent draws of the $k$th mode, $\delta_{k,p}$ with $p=1, \cdots, N_k$ from \equref{eq:p_delta}. 
+
+The unbiased estimator for the power spectrum (assuming we know the mean is zero) is
+\eqn{
+	\hat{P}_{k} = \frac{1}{N_k} \sum_{p=1}^{N_k} |\delta_{k,p}|^2 =\frac{P_k}{N_k } \underbrace{\sum_{p=1}^{N_k} |x_{k,p}|^2 }_{\hat{\sigma}_k}
+}
+%The extra $i$ subscript is to make sure we agree with the notation adopted below, where we repeat the $N_k$ draw many times, and each draw is indexed with $i$.
+Since the $x_k$'s are standard normal random variables, $\hat{\sigma}_k$ follows a chi-squared distribution with $N_k$ degrees of freedom, $\hat{\sigma}_k \sim \chi^2(N_k)$. 
+Thus, $\hat{P}_{k} \sim \frac{P_k}{N_k }  \chi^2(N_k)$, with the mean value being $P_k$, demonstrating that the previous estimator is unbiased.
+
+We are interested in the covariance of this estimator:
+\eqn{
+	C_{kk'} = \mathrm{Cov}[\hat{P}_{k}, \hat{P}_{k'}]
+}
+In our simple setup, we know that the $k$ modes are uncorrelated, so we have
+\eqn{
+	C_{kk'} = 2{P}^2_{k} \delta^D(k-k')
+}
+where $ \delta^D$ is the Dirac delta. Yet, we want to estimate this covariance via Monte Carlo.
+A concrete example is the estimation of the covariance of the power spectrum in a density field evolved from Gaussian initial conditions, which is a fairly standard setup in cosmology.
+Hence, we introduce another set of draws: we repeat our experiment (drawing $N_k$ modes) $N$ times. The estimator from the $i$th draw is denoted by $\hat{P}_{k, i}$. 
+At this stage, we assume they are uncorrelated, \ie, $\mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k, j}] = 0$ if $i\neq j$.
+
+In the case of galaxy survey analyses in cosmology, we would generate $N$ random Gaussian initial conditions and evolve them in an $N$-body fashion. Each 3D Fourier mode is estimated from $N_k$ modes.
+
+We turn our attention to the sample covariance estimator
+\eqn{
+	\hat{C}_{kk'} = \frac{1}{\nu}  \sum_{i=1}^{N} (\hat{P}_{k, i} - \bar{P}_{k})(\hat{P}_{k', i} - \bar{P}_{k'})
+}
+We can either assume that the mean is know and set $\bar{P}_{k}=P_k$, in which case $\nu=N$, or directly estimate it with
+\eqn{
+	\bar{P}_{k} = \frac{1}{N}  \sum_{i=1}^{N} \hat{P}_{k, i}
+}
+in which case we must set $\nu=N-1$. In what follows, we will consider this latter case. 
+
+We also know that if each $\hat{P}_{k, i}$ was Gaussian, $\hat{C}_{kk'} (N-1)$ would follow a Wishard distribution REF. It is unbiased, so the mean is the true $C_{kk'}$, and its variance is
+\eqn{
+	\mathrm{Cov}[\hat{C}_{ij} \hat{C}_{kl}] = \frac{C_{ij}C_{kl} + C_{ik}C_{jl}}{N-1}
+}
+This assumption is pretty accurate as soon as $N_k>50$, because the chi-squared distribution is then very well approximated by a Gaussian (but still assuming that $\delta$ is Gaussian of course!). 
+We will make that assumption for the derivations below.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Three problems}
+
+First, we see that the scaling of the standard MC covariance estimator is $(N-1)^{-1}$, which is exceptionally bad.
+This is a fairly standard result in statistics, and there are numerous strategies to decrease this scaling. 
+We will go through some of those below.
+
+Second, we see that our covariance of interest is exceedingly simple in the case of a Gaussian random field. We don't really need the MC estimator. 
+In the case of the cosmological matter power spectrum or its covariance, there are a number of theoretical models that are satisfactory over some range of scales and redshifts. 
+We absolutely want to make use of that and focus on estimating the residuals (unmodelled) part with Monte-Carlo, since this significantly reduces the number of simulations required. 
+In other words, let's not use large number of simulations just to estimate the components that we already know how to model analytically.
+Again, there are standard techniques for including incomplete theoretical models in MC estimators , and we will explore those.
+
+Third, there are various other considerations that we may need to consider in our estimators. A good example is the effect of box size and resolution on N-body simulations and power spectrum or covariance estimators. 
+We will briefly discuss those issues below.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Monte-Carlo covariance estimator correlated samples}
+
+
+Let us relax one of the previous assumptions and introduce correlated draws, \ie
+\eqn{
+	\mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', j}] \ = \ \mathbb{E}[\hat{P}_{k, i}\hat{P}_{k', j}] - \mathbb{E}[\hat{P}_{k, i}]\mathbb{E}[\hat{P}_{k', j}]  \ =  \ C_{kk'} \left( \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} \right)
+}
+where $\delta^K$ is Kronecker's delta. This slightly complicated expression is to recover $C_{kk'}$ at $i=j$ and $\beta_{ij}C_{kk'}$ at $i\neq j$. In other words, the correlation coefficient is simply $\beta_{ij}$. The only condition we must impose is that the full correlation matrix (constructed with the $\beta_{ij}$s) is symmetric positive definite. In particular, we note that if we take $\beta_{ij}=\beta$, we must have $\beta > -1/(N-1)$
+
+We will now compute the covariance of the sample estimator, on the diagonal only (we only consider $\mathrm{Cov}[\hat{C}_{kk'}\hat{C}_{lm}]$ for $l=k, k'=m$):
+\eqn{
+	\mathrm{Var}[\hat{C}_{kk'}] \ =\   \frac{1}{(N-1)^2} \mathrm{Var}\left[ \hat{C}_{kk',i}  \right]  
+	\ = \   \frac{1}{(N-1)^2}\sum_{i=1}^{N}\sum_{j=1}^{N} \mathrm{Cov}[\hat{C}_{kk',i} , \hat{C}_{kk',j} ]
+}
+After a rather long derivation presented in \appref{sec:samplecovariancecorrelateddraws}, we obtain
+\eqn{
+	&&  \ \mathrm{Var}[\hat{C}_{kk'}] \ = \frac{
+	 A_0   +	  A_0^\prime  - A_2 - A_2^\prime}{(N-1)^2}  =    \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) \times s_N
+}
+with the scaling term 
+\eqn{
+	s_N = \frac{ \sum_{ij} B_{ij}^2  - \frac{(\sum_{ij} B_{ij})^2}{N^2}}{(N-1)^2}
+}
+	 with $B_{ij} =  \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} $ and $\beta_{ij} \in [-1, 1]$ the correlation coefficient between the $i$th and the $j$th samples $\hat{P}_{k, i}$ and $\hat{P}_{k, j}$. 
+
+Using the same ingredients of \appref{sec:samplecovariancecorrelateddraws}, we can compute the expectation of the estimator,
+
+\eqn{
+	\mathbb{E}(\hat{C}_{kk'}) = C_{kk'} b_N
+}
+with the bias
+\eqn{
+	b_N = \frac{\sum_i B_{ii} - \frac{B}{N}}{N-1}
+}
+
+If $b_N\neq 1$, the estimator is biased, so we must apply a correction factor to $\hat{C}_{kk'}$.
+The variance of the de-biased estimator is
+\eqn{
+	 \mathrm{Var}\left[ \frac{\hat{C}_{kk'}}{b_N}\right]  = \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) s_N^\prime  \label{ref:samplecovariancevariance}
+}
+with 
+\eqn{
+	s_N^\prime  = \frac{s_N}{b^2_N} =  \frac{ \sum_{ij} B_{ij}^2  - \frac{B^2}{N^2}}{ \left(\sum_i B_{ii} - \frac{B}{N}\right)^2 }
+	}
+
+Finally, we check that the sample mean estimator is unbiased, $\mathbb{E}(\bar{P}_k) = P_k$, and that its covariance is
+\eqn{
+	\mathrm{Cov}[\bar{P}_k, \bar{P}_{k'}] = C_{kk'} \underbrace{ \frac{B}{N^2} }_{v_N}
+}
+
+\begin{table}\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+	\hline	Name	& $B_{ij}$	&	$B_{i}$	&	$B$	&	$v_N$	&	$s_N $ 	&	$b_N$	&	$s_N^\prime$	\\\hline
+	Uncorrelated	&$ \delta^K_{ij}$		&	1	&	$1/N$	&	$N$	&	$1/(N-1)$	&	$1$	&	$1/(N-1)$	\\
+	Correlated	&$\delta^K_{ij}(1-\beta) + \beta$		&	$1 + (N-1)\beta$	&	$N + (N^2-N)\beta$	&	$\frac{1 + (N-1)\beta}{N}$	&	$(1-\beta)^2/(N-1)$	&	$1-\beta$	&	$1/(N-1)$	\\
+	Fully correlated	&$ 1$		&	$N$	&	$N^2$	&	$1$	&	$0$	&$0$		&	$0$	\\
+	Fully anticorrelated	&$2 \delta^K_{ij} - 1$		&	$2-N$	&	$N(2-N)$	&	$(2-N)/N$	&	$4/(N-1)$	&	$2$	&	$1/(N-1)$	\\
+	\hline
+\end{tabular}	
+\caption{Summary of our results for the mean and variance of the sample mean and sample variance estimators. We define $B_{ij} =  \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij}$, $B_i=\sum_{j=1}^NB_{ij}$, $B=\sum_{i=1}^NB_{i}$. As defined in the text, $v_N$ and $s_N^\prime$ characterize the scaling of the variance of the \textit{unbiased} sample mean and sample covariance estimators (the constant terms in those are $C_{kk'}$ and $C_{kk}C_{k'k'} + C_{kk'}^2$, respectively). 
+}
+\label{table:correlateddrawbiasesandvariances}
+\end{table}
+
+Our findings are summarized in Table~\ref{table:correlateddrawbiasesandvariances}. \textbf{We conclude that that 1) we can easily reduce the variance of the sample mean by adopting correlated samples, 2) this unfortunately doesn't work for the sample covariance.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Stratified sampling}
+
+Let us now take a step back from the $P_k$ and $C_{kk'}$ notation, and introduce an important concept. 
+We will assume that we have a set of correlated samples $X_{ij}$. 
+We group them in packets of size $M$, and for each packet, we compute a statistic with a MC estimator $f$. 
+We then compute a final statistic with another MC estimator $g$. 
+\eqn{
+	\hat{X}_i &=& f\bigl(\{X_{ij} | j=1, \cdots, N\}\bigr) \quad i=1, \cdots M \\
+	\hat{X} &=& g\bigl(\{\hat{X}_i | i=1, \cdots M\}\bigr)
+}
+Having multiple layers of MC estimators is known as \textbf{stratified sampling}. It is a powerful variance reduction technique.
+We can simply use the results of the previous section on both $f$ and $g$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Stratified estimator for the mean}
+
+Both estimators are the sample mean,
+\equ{
+	\hat{X}_i = \frac{1}{N}\sum_{j=1}^N X_{ij}  \quad\quad \hat{X} =  \frac{1}{M}\sum_{i=1}^M \hat{X}_i 
+	}
+All of the samples have a mean $\mu$ and a variance $V$. It is pretty obvious that $\mathbb{E}[\hat{X}] = \mu$.
+The samples within each of the packets $i=1, \cdots M$ are correlated with a correlation coefficient $\beta$. 
+There are no correlations between packets.
+\eqn{
+	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{ij}(1-\beta) + \beta\bigr) \ 
+}
+Using the expressions derived above, we find
+\eqn{
+	% \mathrm{Var}[\hat{X}_i] &=& V \times \frac{1 + (N-1)\beta}{N}\\ 
+	\mathbb{E}[\hat{X}] &=& \mu\quad\quad
+	\mathrm{Var}[\hat{X}] =  V \times \frac{1 + (N-1)\beta}{N M}
+}
+
+We see that the variance is cancelled if 
+\eqn{
+	\beta^\mathrm{VC} \rightarrow^{>} - \ \frac{1}{N-1}
+}
+with VC as in Variance Cancellation. The arrow means that we cannot actually take $- \ \frac{1}{N-1}$ because the correlation matrix wouldn't be semi-positive definite, hence value. However, we can approach this value as much as we can.
+
+The specific case of $N=2$ is known as the \textbf{antithetic estimator for the sample mean}. In this case, the optimal choice for cancelling the variance is $\beta^\mathrm{RC}=-1$, \ie perfectly anti-correlated variables. 
+This is the property exploited by \cite{PontzenEtAl2016}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Two-layer stratified estimators for the covariance}
+
+There are two estimators for the covariance: taking $f$ as the sample covariance and $g$ as the sample mean estimator, or conversely. We will go through both. Again, we only consider correlations within (not between) packets:
+\eqn{
+	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{ij}(1-\beta) + \beta\bigr) \ 
+}
+The first stratified estimator is
+\eqn{
+	\hat{X}_i &=& \frac{1}{N-1}\sum_{j=1}^N \frac{(X_{ij} - \bar{X}_{i})^2}{1-\beta}	\quad\quad \bar{X}_{i}	=  \frac{1}{N}\sum_{j=1}^N X_{ij}	\quad\quad \hat{X} =  \frac{1}{M}\sum_{i=1}^M \hat{X}_i 
+}
+and its mean and the variance are
+\eqn{
+	% \mathbb{E}[\bar{X}_i] &=& \mu \\ 
+	% \mathbb{E}[\hat{X}_i] &=& V \\ 
+	% \mathrm{Var}[\hat{X}_i] &=& \frac{2V^2}{N-1} \\ 
+	\mathbb{E}[\hat{X}] 	&=&	V 	\quad \quad\mathrm{Var}[\hat{X}] = \frac{2V^2}{M(N-1)} 
+}
+The extra $ (1-\beta)$ in the definition of $\hat{X}_i$ was to make the estimator unbiased. As a consequence, and perhaps unsurprisingly, we see that there is no variance reduction since $\beta$ does not appear in $\mathrm{Var}[\hat{X}]$.
+
+The second estimator reads
+\eqn{
+	\hat{X}_i &=& \frac{1}{N}\sum_{j=1}^N X_{ij}	\quad\quad
+	\hat{X} =  \frac{1}{M-1}\sum_{i=1}^M (\hat{X}_i  - \bar{X})^2 \quad\quad
+	\bar{X} =  \frac{1}{M}\sum_{i=1}^M \hat{X}_i
+}
+
+and its mean and the variance are
+\eqn{
+	% \mathbb{E}[\hat{X}_i] &=& \mu \\ 
+	% \mathrm{Var}[\hat{X}_i] &=& V \times \frac{1 + (N-1)\beta}{N}\\ 
+	% \mathbb{E}[\bar{X}] &=& \mu \\ 
+	\mathbb{E}[\hat{X}] &=& V \quad\quad
+	 \mathrm{Var}[\hat{X}] = 2V^2 \times \frac{(1 + (N-1)\beta)^2}{N (M-1)}
+}
+In this case, there is a variance reduction! If we average out correlated $X_i$s before computing the sample variance, we can decrease its variance. In fact, we can (tend to) cancel it out by adopting $\beta^\mathrm{VC} \rightarrow^{>} - \ \frac{1}{N-1}$ for the $X_i$s in each packet. In the specific case of pairs of random variables $N=2$, we should use again use $\beta^\mathrm{VC} = -1$. This is the \textbf{antithetic sampling for the sample covariance}.
+
+Note that in the case of Gaussian random variables, the covariance matrix is singular when $\beta \pm 1$, and perfectly anti-correlated samples are obtained by flipping the sign of the variable. There is only one problem: in this case, we cancel out the variable because there is indeed no variability whatsoever in the sampling. So one may  want to set $\beta$ close but not exactly $\pm1$.
+
+\textbf{In conclusion, to reduce to variance of the covariance matrix, we must generate anti-correlated power spectra, and use a stratified estimator.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Connection to cosmology}
+
+Reconnecting to the previous section, should we identify $X$ to $\delta_{k, i}$, or to $\hat{P}_{k,i}$? Again, we assume that we will do $i=1, \cdots, N$ draws, potentially grouped into packets and correlated.
+
+The setup is fairly clear: we want to generate Gaussian initial conditions for $\delta$, then evolve them via a N-body code, and estimate the power spectrum and the covariance matrix of the evolved field. 
+
+If we identify $X$ to $\delta_{k, i}$, then we need to add another layer of estimation on top of our formalism to get the covariance matrix. 
+If we identify $X$ to $\hat{P}_{k,i}$, we immediately face the question of controlling the correlation properties of $\hat{P}_{k,i}$ given that we generate $\delta_{k, i}$.
+
+We should immediately note that the latter case might be easily achievable: if we generate anti-correlated density fields, any residual anti-correlation in the power spectrum will decrease the variance of the stratified sample estimators described above. So the real question is quantitative: how can we generate anti-correlated power spectra when drawing density fields ?
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Can we generate anti-correlated power spectra from (anti-)correlated density? No.}
+
+We consider correlated Gaussian draws of the density field, such that
+\eqn{
+	\mathrm{Cov}\bigl[\mathrm{Real}[\delta_{k, p, i}], \mathrm{Real}[\delta_{k', q, j}]\bigr] &=& \delta^D(k-k') \ \delta^K_{pq}\  \frac{P_k}{2}\ \underbrace{( \delta^K_{ij}(1+\beta_{ij}) + \beta_{ij})}_{B_{ij}}	\\
+	\mathrm{Cov}\bigl[\mathrm{Imag}[\delta_{k, p, i}], \mathrm{Imag}[\delta_{k', q, j}] \bigr] &=& \delta^D(k-k') \ \delta^K_{pq}\  \frac{P_k}{2}\ \underbrace{( \delta^K_{ij}(1+\gamma_{ij}) + \gamma_{ij})}_{G_{ij}}\\
+	\mathrm{Cov}\bigl[\mathrm{Real}[\delta_{k, p, i}], \mathrm{Imag}[\delta_{k', q, j}] \bigr] &=& \delta^D(k-k') \ \delta^K_{pq}\  \frac{P_k}{2}\ \underbrace{( \delta^K_{ij}(1+h_{ij}) + h_{ij})}_{H_{ij}}
+}
+\ie without mixing the $k$ or $p-q$ modes.
+Since the mean value is zero, we have $\mathrm{Cov}[...] = \mathbb{E}[...]$ for all expression involving pairs of densities.
+Like before, we will use the notation $B_{ij}$ (and $G_{ij}$ and $H_{ij}$) for the elements of the correlation matrices, which must be symmetric semi-positive definite.
+
+\eqn{
+	\mathrm{Cov}[\hat{P}_{k, i}, \hat{P}_{k', j}] &=& \frac{1}{N_k^2} \sum_{p=1}^{N_k}\sum_{q=1}^{N_k} \mathrm{Cov}\Bigl[ \delta_{k, p, i} \delta_{k, p, i}^*, \delta_{k', q, j}\delta_{k', q, j}^* \Bigr] \\
+	&=&  \frac{1}{N_k^2} \sum_{p=1}^{N_k}\sum_{q=1}^{N_k}   \mathbb{E}[\delta_{k, p, i} \delta_{k', q, j}]\mathbb{E}[ \delta_{k, p, i}^* \delta_{k', q, j}^*] + \mathbb{E}[\delta_{k, p, i} \delta_{k', q, j}^*]\mathbb{E}[ \delta_{k, p, i}^* \delta_{k', q, j}]
+}
+where we have used Wick's theorem, \equref{eq:wickstheorem}. Unfortunately, to simply this expression we must split the real and imaginary part s of the complex numbers. Luckily, many of the cross-terms vanish since all the real and imaginary parts are independent. 
+\eqn{
+	\mathrm{Cov}[\hat{P}_{k, i}, \hat{P}_{k', j}] &=&  \frac{1}{N_k^2} \sum_{p=1}^{N_k}\sum_{q=1}^{N_k}\\
+	&&  
+	\mathbb{E}[\mathrm{Real}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] +i\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] +i\mathrm{Imag}[\delta_{k',q,j}] \mathrm{Real}[\delta_{k, p, i}]  - \mathrm{Imag}[\delta_{k, p, i}] \mathrm{Imag}[\delta_{k',q,j}] ] \nonumber\\
+	&& \times\mathbb{E}[ \mathrm{Real}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] -i\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] -i\mathrm{Imag}[\delta_{k',q,j}] \mathrm{Real}[\delta_{k, p, i}] -\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Imag}[\delta_{k',q,j}] ]\nonumber \\ 
+	&&+ \  \mathbb{E}[\mathrm{Real}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] +i\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] -i\mathrm{Real}[\delta_{k, p, i}] \mathrm{Imag}[\delta_{k',q,j}] +\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Imag}[\delta_{k',q,j}] ] \nonumber\\
+	&& \times \mathbb{E}[ \mathrm{Real}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] -i\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Real}[\delta_{k',q,j}] +i\mathrm{Imag}[\delta_{k',q,j}]  \mathrm{Real}[\delta_{k, p, i}]+\mathrm{Imag}[\delta_{k, p, i}] \mathrm{Imag}[\delta_{k',q,j}] ] \nonumber \\
+	%&=& \delta^D(k-k')   \frac{P^2_k}{4} \frac{1}{N_k} \left[ \left(B_{ij} + 2iH_{ij} - G_{ij}\right)  \left(B_{ij} - 2iH_{ij} - G_{ij}\right) + \left(B_{ij} + G_{ij}\right)  \left(B_{ij} + G_{ij}\right) \right]	\\
+	%&=& \delta^D(k-k')   \frac{P^2_k}{4} \frac{1}{N_k} \left[  (B_{ij} - G_{ij})^2 + 4H^2_{ij} + \left(B_{ij} + G_{ij}\right)^2 \right] \\
+	&=& \delta^D(k-k')   P^2_k \frac{1}{N_k} \left[  \frac{B^2_{ij} + G^2_{ij}}{2}  + H^2_{ij} \right]
+}
+
+%\eqn{
+%	&&\mathbb{E}[(a_1+ib_1)(a_3+ib_3)]\mathbb{E}[ (a_1-ib_1)(a_3-ib_3)] + \mathbb{E}[(a_1+ib_1)(a_3-ib_3)]\mathbb{E}[ (a_1-ib_1)(a_3+ib_3)] 	\\
+%	&&\quad = \ \mathbb{E}[a_1a_3+ib_1a_3+ib_3a_1 - b_1b_3]\ \mathbb{E}[ a_1a_3-ib_1a_3-ib_3a_1-b_1b_3] \\ 
+%	&&\quad \quad + \  \mathbb{E}[a_1a_3+ib_1a_3-ia_1b_3+b_1b_3]\ \mathbb{E}[ a_1a_3-ib_1a_3+ib_3a_2+b_1b_3]  
+%}
+ 
+
+We conclude that the correlation coefficient is $\left[  \frac{B^2_{ij} + G^2_{ij}}{2}  + H^2_{ij}\right]$ and is strictly positive regardless of the correlations we introduce between $\delta_{k, p, i}$ and $\delta_{k', q, j}$.
+\textbf{We conclude that unfortunately we cannot generate anti-correlated power spectra from correlated density field draws. We could have seen this from our previous findings too.}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Drawing the density field from anti-correlated power spectra.}
+
+
+Let us explore another strategy: rather than drawing the density field from the theory power spectrum, let's generate the density field from anti-correlated draws of the theory power spectrum. 
+In other words, we now construct power spectra such that $Q_{k, i}$ for $i=1, \cdots, N$ from the mean $P_{k}$ and with the covariance structure $\mathrm{Cov}[{Q}_{k, i}, {Q}_{k', j}] \ = \ C_{kk'} \left( \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} \right)$
+We use $Q$ instead of $P$ or even $\hat{P}$ to emphasize the fundamental difference of the scheme proposed here.
+
+We now draw the corresponding density field $\delta_{k, p, i}$ from $Q_{k, i}$. Importantly, we want it to be a Gaussian random field of mean $P_{k}$, in order to have Gaussian initial conditions for an N-body simulation. 
+Since we have drawn $Q_{k, i}$ already, we cannot construct $\delta_{k, p, i}$ from a naive Gaussian draw.
+Luckily, as described in \cite{AnguloPontzen2016}, this can be achieved by setting 
+$\delta_{k, p, i} = \sqrt{Q_{k, i}} \exp(i\theta_{k, p, i})$
+where the complex phase $\theta_{k, p, i}$ is drawn uniformly between $0$ and $2\pi$.
+Again, we perform $N_k$ independent random draws for the $k$-th mode in the $i$-th simulation.
+
+The resulting density fields $\delta_{k, p, i} $ are indeed Gaussian random fields in $P_k$, but constructed with anti-correlated power spectra $Q_{k, i}$.
+Concretely, the probability distribution of the modulus is no longer
+\eqn{
+	p\bigl(|\delta_{k, p, i}|, \theta_{k, p, i}\bigr) = \frac{|\delta_{k, p, i}|}{2\pi P_{k, i}} \exp\left( -\frac{|\delta_{k, p, i}|^2}{P_{k, i}}\right)
+}
+it is now
+\eqn{
+	p\bigl(|\delta_{k, p, i}|, \theta_{k, p, i}\bigr) = \frac{1}{2\pi} \delta^D\left(|\delta_{k, p, i}| - \sqrt{Q_{k, i}}\right)
+}
+\todo{Is this procedure exact and correct? See \cite{AnguloPontzen2016}}
+
+We can check that the measured power spectra are indeed anticorrelated:
+\eqn{
+	\mathrm{Cov}[\hat{P}_{k, i}, \hat{P}_{k', j}] \ = \ \frac{1}{N_k^2} \sum_{p=1}^{N_k}\sum_{q=1}^{N_k} \mathrm{Cov}\Bigl[ |\delta_{k, p, i}|^2, |\delta_{k', q, j}|^2 \Bigr] 
+	\ =\  \frac{1}{N_k^2} \sum_{p=1}^{N_k}\sum_{q=1}^{N_k}   \mathrm{Cov}[{Q}_{k, i}, {Q}_{k', j}]  
+	\ = \ C_{kk'} \left( \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} \right)
+}
+which is the desired property.
+
+\textbf{We conclude that by using this trick we can draw density fields that have anti-correlated power spectra, and therefore use the previous stratified estimator to reduce the variance of the sample covariance estimator.}
+
+\todo{Isn't Pk missing from variance of $\hat{P}_k$ everywhere in the previous section?}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Non-Gaussian random variables}
+
+So far we have assumed that most variables are Gaussian distributed. In practice, there are two sources of non-Gaussianity: in $P_k$ since it is calculated from $\delta$, and in $\delta$ itself.
+
+We have assumed that the estimated power spectra $\hat{P}_{k, i}$ are Gaussian distributed. This is not true even if $\delta_k$ is a Gaussian random field: we showed that $\hat{P}_{k, i}$ follows a chi-squared distribution. As a consequence, our application of Wick's theorem at \equref{eq:wickstheorem} does not hold. However, we expect it to be relatively accurate given the small deviations between the variances of the chi-squared and Gaussian distributions. For most observables it will be the case: we usually average out enough modes in each bins so that the statistical uncertainties are close to Gaussian.
+
+The real non-Gaussianity is in the \textit{evolved} density field itself, and the impossibility to model the covariance matrix $C_{kk'}$ accurately (which is why we needed simulations in the first place).  Schematically, we can write
+\eqn{
+	\delta^\mathrm{ini}_k \ &\longrightarrow& \ \delta^\mathrm{fin}_k	\nonumber\\
+	P^\mathrm{ini}_k \ &\longrightarrow& \ P^\mathrm{fin}_k	\nonumber\\
+	C_{kk'}^\mathrm{ini}  \ &\longrightarrow& \ C_{kk'}^\mathrm{fin} \nonumber\\
+	\mathrm{Corr}[\hat{P}^\mathrm{ini}_{k, i}, \hat{P}^\mathrm{ini}_{k', j}]  \ &\longrightarrow& \ \mathrm{Corr}[\hat{P}^\mathrm{fin}_{k, i}, \hat{P}^\mathrm{fin}_{k', j}]   \nonumber
+}
+where the arrows denote cosmological evolution, for example evolving the initial density field in an N-body fashion. 
+We are truly interested in $P^\mathrm{fin}_k$ and $C_{kk'}^\mathrm{fin}$.
+Even if we generate anti-correlated initial power spectra and the corresponding density fields, there is no guarantee that those anti-correlations persist in the evolved field, especially in $\mathrm{Corr}[\hat{P}^\mathrm{fin}_{k, i}, \hat{P}^\mathrm{fin}_{k', j}]$. 
+Yet, those are essential to achieve variance reduction.
+Luckily, we can intuitively guess that most of the anti-correlation should be reduced by not totally cancelled, especially on large scales, which is where we care about variance cancellation the most due to the fewer number of modes.
+\todo{Can we write down first order analytic predictions for $\mathrm{Corr}[\hat{P}^\mathrm{fin}_{k, i}, \hat{P}^\mathrm{fin}_{k', j}] / \mathrm{Corr}[\hat{P}^\mathrm{ini}_{k, i}, \hat{P}^\mathrm{ini}_{k', j}]$ ?}
+\todo{Run simulations and make experiments to quantify this!}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Including theoretical predictions in the estimators}
+
+We are interested in $P^\mathrm{fin}_k$ and $C_{kk'}^\mathrm{fin}$ but only have partial models, that are accurate only in certain limited regimes, such as large scales, high redshift, etc. 
+Can we make use of those in the previous MC estimators?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Setup and naive approach}
+
+In a first attempt, let's suppose we have models for $P^\mathrm{fin}_k$ and $C_{kk'}^\mathrm{fin}$, denoted by $\tilde{P}^\mathrm{fin}_k$ and $\tilde{C}_{kk'}^\mathrm{fin}$, that are imperfect.
+We now seek to estimate the deviations from those models to the target, true power spectrum and its covariance matrix:
+\eqn{
+	{D}_k &=&P^\mathrm{fin}_k - \tilde{P}^\mathrm{fin}_k		 \quad \quad\quad
+	\Delta_{kk'} = C_{kk'}^\mathrm{fin}  - \tilde{C}_{kk'}^\mathrm{fin}
+}
+Let us write down the classic sample estimators first:
+\eqn{
+	\bar{D}_k &=&	\frac{1}{N} \sum_{i} \hat{D}_{k, i}	 \quad \quad\quad
+	\hat{\Delta}_{kk'} = \frac{1}{N-1} \sum_{i} \left( \hat{D}_{k, i} - \bar{D}_{k} \right) \left( \hat{D}_{k', i} - \bar{D}_{k'} \right)
+}
+with $\hat{D}_{k, i} = \hat{P}^\mathrm{fin}_{k, i} - \tilde{P}^\mathrm{fin}_k$.
+
+Let's remember that \textit{in the Gaussian case}, the constant term in all of our sample mean estimators was $C_{kk'}$, and the constant in the sample covariance estimators was ${C}_{kk}{C}_{k'k'} + {C}_{kk'}^2$. 
+
+
+So we immediately conclude that if the power spectrum estimates $P^\mathrm{fin}_{k, i}$ are Gaussian distributed (potentially correlated), we have
+\eqn{
+	\mathrm{Cov}[\bar{D}_k, \bar{D}_{k'}] = \Delta_{kk'} v_N \quad \quad\quad
+	 \mathrm{Var}\left[ \frac{\hat{\Delta}_{kk'}}{b_N}\right]  = \bigl(\Delta_{kk}\Delta_{k'k'} + \Delta_{kk'}^2 \bigr) s_N^\prime  
+}
+analogous to \equref{ref:samplecovariancevariance}. Again, the $b_N$ term is to debias the estimator in the case of correlated power spectra.
+
+The scalings $v_N$ and $s_N^\prime$ have not changed - only the constant terms did. The variances of the estimators now depend on the deviations from the model. 
+If those are small, then we have indeed improved!
+Needless to say we can use the previous stratified estimators in this case too. 
+
+\textbf{In conclusion, including theoretical predictions when MC estimating the power spectra and covariances reduces the variances of the estimators, but not their scaling with the number of simulations.} 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Control variates}
+
+What if we wanted to further decrease the scaling of the estimators by including theoretical predictions? 
+This can be achieved with \textbf{control variates}.
+The idea is again to exploit (anti-)correlation, but this time not between our samples (previously the power spectra), but with \textit{auxiliary variables}.
+Specifically, we want the auxiliary variables to have a known target statistic. 
+
+In the context of cosmological N-body simulations, an obvious choice is to run an auxiliary set of simulations where we can actually accurately model the power spectra and covariance matrices. 
+For example, we could run LPT simulations.
+
+Like before, we will look at differences between the estimated power spectra of our full complicated simulation $\hat{P}^\mathrm{fin}_{k, i} $ and those of our simplified simulation, denoted $\hat{S}^\mathrm{fin}_{k, i}$. 
+The significant difference between those is that  we do have exact (or very accurate models) of the power spectrum and covariance matrix for the latter, which we write $\tilde{P}^\mathrm{fin}_k$ and $\tilde{C}_{kk'}^\mathrm{fin}$.
+
+We will not discuss how the auxiliary simulations are constructed now - let us first write the sample estimators
+\eqn{
+	\hat{D}_{k, i} &=&  \hat{P}_{k, i} + \alpha (\hat{S}_{k, i} - \tilde{P}^\mathrm{fin}_k)  \quad \quad\quad
+	\bar{D}_k =	\frac{1}{N} \sum_{i=1}^N	\hat{D}_{k, i}	\quad \quad\quad
+	\hat{\Delta}_{kk'} = \frac{1}{N-1} \sum_{i=1}^N \left( \hat{D}_{k, i} - \bar{D}_{k} \right) \left( \hat{D}_{k', i} - \bar{D}_{k'} \right)
+}
+We have 
+\eqn{
+	\mathbb{E}[\hat{D}_{k, i}] &=& {P}^\mathrm{fin}_k 	\\	
+	\mathrm{Covar}[\hat{D}_{k, i}, \hat{D}_{k', j}] &=& \underbrace{\mathrm{Covar}[\hat{P}_{k, i}, \hat{P}_{k', j}]}_{C_{kk'} B_{ij}}  + \alpha^2 \underbrace{\mathrm{Covar}[\hat{S}_{k, i}, \hat{S}_{k', j}] }_{\tilde{C}_{kk'}^\mathrm{fin} G_{ij}} + \alpha \underbrace{\mathrm{Covar}[\hat{P}_{k, i}, \hat{S}_{k', j}]}_{ R_{kk', ij}} + \alpha \underbrace{\mathrm{Covar}[\hat{S}_{k, i}, \hat{P}_{k', j}]}_{ R_{kk', ij}} 
+}
+where we have defined the relevant covariances as before. In particular, the auxiliary simulations are correlated with $G_{ij}$ (subject to the same constraints as $B_{ij}$ as before), and $ R_{kk', ij}$ characterizes the covariance between the main and the auxiliary simulations. 
+Those might need to be estimated from the simulations themselves, but may be partially estimated analytically.
+We will discuss that below.
+
+The mean and variance of the sample mean (power spectrum) estimator are
+\eqn{
+	\mathbb{E}[\bar{D}_{k}] &=& {P}^\mathrm{fin}_k 	\\	
+	\mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}] &=& \frac{1}{N^2}\sum_{i=1}^N\sum_{j=1}^N \left( C_{kk'} B_{ij} + \alpha^2  \tilde{C}_{kk'}^\mathrm{fin} G_{ij} + 2 \alpha  R_{kk', ij}  \right)
+}
+By differentiating, we find that the value minimizing the variance is
+\eqn{
+	{\alpha^\mathrm{opt}_{kk'}} = \ - \ \frac{ \sum_{i=1}^N\sum_{j=1}^N  R_{kk', ij} }{ \sum_{i=1}^N\sum_{j=1}^N \tilde{C}_{kk'}^\mathrm{fin} G_{ij} }
+}
+Of course those covariances/correlations might not be known and may need to be estimated directly from the data, especially because $R_{kk', ij}$ is a covariance and depends on the unknown target	 covariance ${C}_{kk'}^\mathrm{fin}$.
+\todo{Discuss how to estimate unbiased $ R_{kk', ij}$ from data.}
+
+If we use a shorter notation $F_{kk',ij} = \mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}]$
+\eqn{
+	\mathbb{E}[\hat{\Delta}_{kk'}] &=&  \frac{ \sum_{i}F_{kk',ii} - \frac{\sum_{ij} F_{kk',ij}}{N} } {N-1}	 \\	
+	 \mathrm{Var}\left[ \hat{\Delta}_{kk'}\right]  &=&	\frac{\sum_{ij} \bigl(F_{kk,ij}F_{k'k',ij} + F_{kk',ij}^2 \bigr) - \frac{1}{N^2}\bigl( \sum_{ij}F_{kk,ij}F_{k'k',ij} \bigr)^2 - \frac{1}{N^2}\bigl( \sum_{ij}F^2_{kk',ij} \bigr)^2 }{(N-1)^2}	
+	}
+	
+	Note that this estimator, in this current form, is biased since  $F_{kk',ij}$ contains the target unknown covariance ${C}_{kk'}^\mathrm{fin}$ and also the known auxiliary covariance $\tilde{C}_{kk'}^\mathrm{fin}$.
+	
+It would be good to understand this estimator, even in a simpler setting. For this purpose, we assume that the known covariance is close to the true one $\tilde{C}_{kk'} \approx {C}_{kk'}$, and that the cross-correlations with the auxiliary simulations are such that $R_{kk',ij} \approx {C}_{kk'} \rho_{ij}$.
+Them, we can write $F_{kk',ij} ={C}_{kk'}  \mathcal{B}_{ij}$ with $\mathcal{B}_{ij} = B_{ij} + 2 \alpha \rho_{ij} + \alpha^2 G_{ij}$. 
+With those assumptions, we find
+\eqn{
+	 \mathrm{Var}\left[ \frac{\hat{\Delta}_{kk'}}{\mathbb{E}[\hat{\Delta}_{kk'}] /{C}_{kk'} }\right]  &=&  \frac{ \sum_{ij} \mathcal{B}_{ij}^2  - \frac{\left(\sum_{ij}\mathcal{B}_{ij}\right)^2}{N^2}}{ \left(\sum_i \mathcal{B}_{ii} - \frac{\sum_{ij}\mathcal{B}_{ij}}{N}\right)^2 }
+	}
+where I haven't written out the bias explicitely for conciseness. 	
+We see that the scaling takes unsurprisingly the same form as in our original investigations. However, there is a major difference: the coefficients $\mathcal{B}_{ij}$ depend on $\alpha$, which we can adjust to minimize the variance just like we did for the sample mean a few line above.
+By differentiating, we find that the value(s) minimizing the variance, ${\alpha^\mathrm{opt}_{kk'}}$ is (are) the zero(s) of a third order polynomial
+\eqn{
+	 \alpha^3  \times 2 \left(  \sum_{ij} G_{ij}^2 - \frac{(\sum_{ij} G_{ij})^2}{N}\right) + 
+	  \alpha^2 \times 6 \left(  \sum_{ij} G_{ij} \rho_{ij} - \frac{\sum_{ij} G_{ij} \sum_{ij} \rho_{ij}}{N} \right) + \\ 
+	  \alpha^1 \times 2 \left(  \sum_{ij} G_{ij} B_{ij} - \frac{\sum_{ij} G_{ij} \sum_{ij} B_{ij}}{N}  + 2 \sum_{ij} \rho^2_{ij} - 2\frac{(\sum_{ij}  \rho_{ij})^2}{N}  \right) + 
+	    2 \left(  \sum_{ij} B_{ij} \rho_{ij} - \frac{\sum_{ij} B_{ij} \sum_{ij} \rho_{ij}}{N}  \right)
+}
+Note that this is again for each pair of mode $kk'$. 
+This can be simplified further by adopting $G_{ij}=B_{ij}$ or $G_{ij} = 0$, but it is probably best to study this system numerically.
+
+
+\textbf{The main conclusion is that the variance of the sample covariance estimator can indeed be reduced by using control variates, especially an auxiliary set of simulations. However, this must be studied numerically.}
+
+\todo{What is the actual reduction of the variance? What if $G_{ij}=B_{ij}$ or $G_{ij} = 0$? Can we actually study this system analytically, or should we just solve it numerically with real simulations? This would be reasonable given that all the correlation coefficients are pretty much unknown in reality.}
+
+\todo{Compute product and ratio control variates for comparison.}
+\todo{Discuss how to construct the auxiliary simulations with the right correlations}.
+\todo{Discuss how to extend this to multiple simulations and control variates.}
+
+\todo{Discuss how to use an existing set of uncorrelated simulations with a new set of simpler correlated simulations to reduce the variance.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Summary}
+
+We have shown that:
+\begin{itemize}
+	\item If we can run simulations that have anti-correlated observables (\eg 3D power spectra), we can significantly reduce the variance of the sample mean and covariance estimators (estimating $P_k$ and its covariance). This is a generalization of the techniques described in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, which were only considering the so-called antithetic estimator of the mean.
+	\item This variance reduction can be improved even further by considering stratified estimators, \ie running groups of correlated simulations. In the specific case of antithetic "paired" simulations as explored in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, we have derived a new estimator for the covariance matrix.
+	\item Many of our derivations assumed Gaussian random variables, but our conclusions, and in particular the variance reduction, hold for non-Gaussian random variables. Those must be studied numerically, but it is very likely (and it has been found in other studies) that the anti-correlations introduced in the initial fields remain fairly conserved as it is evolved in an N-body simulation.
+	Thus, we should be able to significantly reduce the variance of the mean and covariance estimators applied to the evolved density field (in other words, we'll need fewer simulations).
+	\item We have only discussed the 3D power spectrum and its covariance, but our conclusions will also apply to any 2-pt estimators of the initial or evolved density field, and their covariances (tomographic power spectra, etc). They should also extend to n-pt correlations, such as the bispectrum, although the estimators will have to be modified.
+	\item Very concretely, we only need to tweak the correlations in the initial conditions of N-body simulations and adopt the previous stratified estimators. In particular, we must construct density fields (initial conditions for N-body simulations) which have anti-correlated observed power spectra. Inspired by \cite{AnguloPontzen2016}, we have shown a simple way to achieve that. 
+\end{itemize}
+
+All of those improvements require no changes in the way the simulations are run. We only need to generate the initial conditions differently, and adopt more complex estimators to compute the final power spectra and covariances.
+
+Furthermore, we have shown that including extra information such as (imperfect) theoretical modeling can also significantly reduce the number of simulations needed. In a naive approach, one can simply focus on estimating differences between the simulation and the imperfect model. In a much better approach, one can run an auxiliary set of simulations, where the analytic form of the target power spectrum or covariance is known, and exploit anti-correlations with the primary set of simulations to significantly reduce the variance of the estimators.
+For this latter technique, one could in fact use an existing set of uncorrelated N-body simulations with a new set of simpler correlated simulations (\eg  LPT) to reduce the variance.
+
+\todo{Write down the final expressions combining stratified estimators with theoretical predictions and control variates!}
+
+\todo{Check weinberg and coles papers}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Extensions}
+
+\todo{Write down the estimators for the mean bispectrum and its covariance! All of the previous methods should work too.}
+
+\todo{Sections about partial averaging, conditioning, Rao-Blackwellization, or importance sampling? Are those useful in this context? I don't think so but I'll check.}
+
+\todo{Discuss what changes and does not change if we consider other observables, their mean and covariance.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{bib}
+
+\newpage
+\appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Derivation of the variance of the sample covariance estimator with correlated draws}\label{sec:samplecovariancecorrelateddraws}
+
+We first write
+\eqn{
+	\hat{C}_{kk',i} \ = \ (\hat{P}_{k, i} - \bar{P}_{k})(\hat{P}_{k', i} - \bar{P}_{k'}) 
+	\ = \  \hat{P}_{k, i}\hat{P}_{k', i} - \bar{P}_{k}\hat{P}_{k', i} - \hat{P}_{k, i}\bar{P}_{k'}  + \bar{P}_{k}\bar{P}_{k'}
+} 
+Our derivation requires unraveling the various components and going though some long expressions,
+\eqn{
+	 && \mathrm{Cov}[\hat{C}_{kk',i} , \hat{C}_{kk',j} ] \\
+	 &=& 
+	  \mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', i}, \hat{P}_{k, j}\hat{P}_{k', j} ] - \mathrm{Cov}[ \bar{P}_{k}\hat{P}_{k', i}, \hat{P}_{k, j}\hat{P}_{k', j} ] - \mathrm{Cov}[ \hat{P}_{k, i}\bar{P}_{k'} ,\hat{P}_{k, j}\hat{P}_{k', j} ] + \mathrm{Cov}[\bar{P}_{k}\bar{P}_{k'}, \hat{P}_{k, j}\hat{P}_{k', j} ]	\\
+	 &-& \mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', i} ,\bar{P}_{k}\hat{P}_{k', j} ] + \mathrm{Cov}[ \bar{P}_{k}\hat{P}_{k', i}, \bar{P}_{k}\hat{P}_{k', j} ] + \mathrm{Cov}[\hat{P}_{k, i}\bar{P}_{k'}, \bar{P}_{k}\hat{P}_{k', j} ] - \mathrm{Cov}[\bar{P}_{k}\bar{P}_{k'}, \bar{P}_{k}\hat{P}_{k', j} ]\\
+	 &-& \mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', i}, \hat{P}_{k, j}\bar{P}_{k'}] + \mathrm{Cov}[ \bar{P}_{k}\hat{P}_{k', i} ,\hat{P}_{k, j}\bar{P}_{k'}] + \mathrm{Cov}[\hat{P}_{k, i}\bar{P}_{k'} ,\hat{P}_{k, j}\bar{P}_{k'}] -\mathrm{Cov}[\bar{P}_{k}\bar{P}_{k'}, \hat{P}_{k, j}\bar{P}_{k'}]\\
+	&+&  \mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', i}, \bar{P}_{k}\bar{P}_{k'}] - \mathrm{Cov}[ \bar{P}_{k}\hat{P}_{k', i} , \bar{P}_{k}\bar{P}_{k'} ] - \mathrm{Cov}[\hat{P}_{k, i}\bar{P}_{k'} , \bar{P}_{k}\bar{P}_{k'}] + \mathrm{Cov}[\bar{P}_{k}\bar{P}_{k'} , \bar{P}_{k}\bar{P}_{k'}]
+}
+
+
+Thanks to Isserlis' \& Wick's theorem, we can use the following identity for any quadruplet of Gaussian random variables ABCD: 
+\eqn{
+	\mathrm{Cov}[AB,CD] &=& \mathbb{E}[ABCD] - \mathbb{E}[AB]\mathbb{E}[CD] \\
+	&=& \mathbb{E}[AB]\mathbb{E}[CD] + \mathbb{E}[AC]\mathbb{E}[BD] + \mathbb{E}[AD]\mathbb{E}[BC] - \mathbb{E}[AB]\mathbb{E}[CD] \\
+	&=& \mathbb{E}[AC]\mathbb{E}[BD] + \mathbb{E}[AD]\mathbb{E}[BC] \label{eq:wickstheorem}
+}
+
+We can expand the covariances into expectations,
+\eqn{
+	 && \mathrm{Cov}[\hat{C}_{kk',i} , \hat{C}_{kk',j} ] =  \\
+	 && 
+	  \EE[\hat{P}_{k, i}\hat{P}_{k, j}] \EE[\hat{P}_{k', i}\hat{P}_{k', j} ] 
+	+	  \EE[\hat{P}_{k, i}\hat{P}_{k', j} ] \EE[\hat{P}_{k', i} \hat{P}_{k, j}] 
+	  - \EE[ \bar{P}_{k}\hat{P}_{k, j}] \EE[\hat{P}_{k', i} \hat{P}_{k', j} ] 
+	  -  \EE[ \bar{P}_{k} \hat{P}_{k', j} ] \EE[\hat{P}_{k', i} \hat{P}_{k, j}] \\
+	&&	  - \EE[ \hat{P}_{k, i}\hat{P}_{k, j}]  \EE[ \bar{P}_{k'} \hat{P}_{k', j} ] 
+	  - \EE[ \hat{P}_{k, i}\hat{P}_{k', j}]  \EE[  \bar{P}_{k'} \hat{P}_{k, j}] 
+	 + \EE[\bar{P}_{k}\hat{P}_{k, j}]  \EE[ \bar{P}_{k'} \hat{P}_{k', j} ]	
+	  + \EE[\bar{P}_{k} \hat{P}_{k', j} ]  \EE[\bar{P}_{k'} \hat{P}_{k, j} ]	\\
+	&& - \EE[\hat{P}_{k, i} \bar{P}_{k}]  \EE[ \hat{P}_{k', i} \hat{P}_{k', j} ] 
+	 - \EE[\hat{P}_{k, i} \hat{P}_{k', j} ]  \EE[\hat{P}_{k', i} \bar{P}_{k} ] 
+	+ \EE[ \bar{P}_{k} \bar{P}_{k}] \EE[ \hat{P}_{k', i} \hat{P}_{k', j} ] 
+	 + \EE[ \bar{P}_{k} \hat{P}_{k', j}]  \EE[  \hat{P}_{k', i} \bar{P}_{k}] \\
+	&& + \EE[\hat{P}_{k, i} \bar{P}_{k}]  \EE[ \bar{P}_{k'} \hat{P}_{k', j} ] 
+	 + \EE[\hat{P}_{k, i} \hat{P}_{k', j}]  \EE[  \bar{P}_{k'} \bar{P}_{k}] 
+	 - \EE[\bar{P}_{k} \bar{P}_{k}]  \EE[ \bar{P}_{k'} \hat{P}_{k', j} ]
+	 - \EE[\bar{P}_{k} \hat{P}_{k', j} ]  \EE[\bar{P}_{k'} \bar{P}_{k} ] \\
+	&& - \EE[\hat{P}_{k, i} \hat{P}_{k, j}]  \EE[ \hat{P}_{k', i} \bar{P}_{k'}] 
+	 - \EE[\hat{P}_{k, i} \bar{P}_{k'} ]  \EE[\hat{P}_{k', i} \hat{P}_{k, j}] 
+	 + \EE[ \bar{P}_{k} \hat{P}_{k, j}]  \EE[ \hat{P}_{k', i} \bar{P}_{k'}] 
+	 + \EE[ \bar{P}_{k} \bar{P}_{k'}] \EE[ \hat{P}_{k', i} \hat{P}_{k, j}] \\
+	&& + \EE[\hat{P}_{k, i}  \hat{P}_{k, j} ]  \EE[\bar{P}_{k'}\bar{P}_{k'}] 
+	 + \EE[\hat{P}_{k, i} \bar{P}_{k'}]  \EE[ \bar{P}_{k'} \hat{P}_{k, j}] 
+	 -\EE[\bar{P}_{k} \hat{P}_{k, j}]  \EE[ \bar{P}_{k'} \bar{P}_{k'}]
+	 -\EE[\bar{P}_{k} \bar{P}_{k'}] \EE[ \bar{P}_{k'} \hat{P}_{k, j}]\\
+	&& +  \EE[\hat{P}_{k, i} \bar{P}_{k} ]  \EE[\hat{P}_{k', i} \bar{P}_{k'}] 
+	+  \EE[\hat{P}_{k, i} \bar{P}_{k'} ]  \EE[\hat{P}_{k', i} \bar{P}_{k}] 
+	- \EE[ \bar{P}_{k} \bar{P}_{k} ] \EE[\hat{P}_{k', i}  \bar{P}_{k'} ] 
+	- \EE[ \bar{P}_{k} \bar{P}_{k'} ]  \EE[\hat{P}_{k', i}  \bar{P}_{k} ] \\
+	&&- \EE[\hat{P}_{k, i} \bar{P}_{k} ]  \EE[\bar{P}_{k'}  \bar{P}_{k'}] 
+	- \EE[\hat{P}_{k, i} \bar{P}_{k'} ]  \EE[\bar{P}_{k'} \bar{P}_{k}] 
+	+ \EE[\bar{P}_{k}  \bar{P}_{k} ]  \EE[\bar{P}_{k'} \bar{P}_{k'}]
+	+ \EE[\bar{P}_{k} \bar{P}_{k'} ]  \EE[\bar{P}_{k'}  \bar{P}_{k}]
+	  }
+
+Thanks to commutativity of the terms within the expectations and also of the indices ($i, j, k, k'$), the only three terms we need to compute are:\
+\eqn{
+	 \EE[\hat{P}_{k, i}\hat{P}_{k', j}] \ &=& \  \mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k', j}] + \mathbb{E}[\hat{P}_{k, i}]\mathbb{E}[\hat{P}_{k', j}]  \ =  \ C_{kk'} \underbrace{\left( \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} \right)}_{B_{ij}} + P_k P_{k'} \\
+	 \EE[\bar{P}_{k}\hat{P}_{k', j}] \ &=&\   \frac{1}{N}  \sum_{l=1}^{N}\EE[\hat{P}_{k, l}\hat{P}_{k', j}]  \ = \ P_k P_{k'} + \frac{C_{kk'} }{N}  \underbrace{ \sum_{l=1}^{N} \left( \delta^K_{lj}(1-\beta_{lj}) + \beta_{lj} \right)}_{B_j} \\
+	 \EE[\bar{P}_{k}\bar{P}_{k'}] \ &=& \ \frac{1}{N^2}  \sum_{l=1}^{N}  \sum_{m=1}^{N} \EE[\hat{P}_{k, l}\hat{P}_{k', m}]  \  = \ P_k P_{k'} + \frac{C_{kk'}}{N^2} \underbrace{ \sum_{l=1}^{N}  \sum_{m=1}^{N}   \left( \delta^K_{lm}(1-\beta_{lm}) + \beta_{lm} \right)}_{B}
+}
+where we have assumed that we estimate the mean too, using the sample estimator. Obviously, we have $B=\sum_{l=1}^{N}  B_{l}$ and $B_l=\sum_{m=1}^{N}  B_{lm}$. 
+Without off-diagonal correlations, we have $B_{ij} = \delta^K_{ij}$,  $B_l = 1$, and $B=N$. In this case, we recover the standard results
+\eqn{
+	 \EE[\hat{P}_{k, i}\hat{P}_{k', j}] \ = \  C_{kk'} \delta^K_{ij} + P_k P_{k'} \quad\quad\quad \EE[\bar{P}_{k}\hat{P}_{k', j}] \ =  \  \EE[\bar{P}_{k}\bar{P}_{k'}]  \ =\ P_k P_{k'} + \frac{C_{kk'} }{N}  
+}
+
+Thanks to the symmetry in $kk'$, there are only six unique terms in $\mathrm{Cov}[\hat{C}_{kk',i} , \hat{C}_{kk',j} ] $:
+\eqn{
+	A_0 = &&  \sum_{ij} \EE[\hat{P}_{k, i}\hat{P}_{k, j}] \EE[\hat{P}_{k', i}\hat{P}_{k', j} ]  \ = \ C_{kk}C_{k'k'}  \sum_{ij} B_{ij}^2 + (C_{kk}P^2_{k'} + P_k^2C_{k'k'}) B  + N^2 P^2_{k}P^2_{k'} \\
+	A_0^\prime = &&  \sum_{ij}  \EE[\hat{P}_{k, i}\hat{P}_{k', j}] \EE[\hat{P}_{k', i}\hat{P}_{k, j} ]  \ = \  C^2_{kk'}  \sum_{ij} B^2_{ij} +  2 C_{kk'} B P_k P_{k'} +  N^2P_k^2 P_{k'}^2 \\
+	A_1 = &&  \sum_{ij}  \EE[ \bar{P}_{k}\hat{P}_{k, j}] \EE[\hat{P}_{k', i} \hat{P}_{k', j} ] \ = \   N^2 P^2_{k}P^2_{k'} + B \Bigl( P^2_{k}C_{k'k'} + P^2_{k'} C_{kk} \Bigr) + \frac{C_{kk} C_{k'k'}  }{N} \sum_{j}  B^2_j	\\
+	A_1^\prime = &&  \sum_{ij} \EE[ \bar{P}_{k} \hat{P}_{k', j} ] \EE[\hat{P}_{k', i} \hat{P}_{k, j}] \ = \ N^2 P^2_k P^2_{k'} + 2 BP_k P_{k'}C_{kk'}  +  \frac{C^2_{kk'} }{N}  \sum_{j} B^2_j	\\
+	&& \sum_{ij} 	 \EE[\bar{P}_{k}\hat{P}_{k, j}]  \EE[ \bar{P}_{k'} \hat{P}_{k', j} ]	= A_1	\\
+	 && \sum_{ij} 	\EE[\bar{P}_{k} \hat{P}_{k', j} ]  \EE[\bar{P}_{k'} \hat{P}_{k, j} ]	= A_1^\prime \\ 
+	A_2 = && \sum_{ij}   \EE[ \bar{P}_{k} \bar{P}_{k}] \EE[ \hat{P}_{k', i} \hat{P}_{k', j} ] =		N^2P^2_kP^2_{k'} + B (P^2_k C_{k'k'}  + P^2_{k'} C_{kk} ) +	 \frac{C_{kk}C_{k'k'}}{N^2}  B^2\\ 
+	A_2^\prime = && \sum_{ij}   \EE[ \bar{P}_{k} \bar{P}_{k'}] \EE[ \hat{P}_{k, i} \hat{P}_{k', j} ] =		N^2 P^2_k P^2_{k'} + 2BC_{kk'}P_k P_{k'} +\frac{C^2_{kk'}}{N^2} B^2 \\
+	 && \sum_{ij}  \EE[\bar{P}_{k}  \bar{P}_{k} ]  \EE[\bar{P}_{k'} \bar{P}_{k'}]	=   \sum_{ij}  \EE[\bar{P}_{k} \bar{P}_{k}]  \EE[ \bar{P}_{k'} \hat{P}_{k', j} ] = A_2\\
+	&& \sum_{ij}  \EE[\bar{P}_{k} \bar{P}_{k'} ]  \EE[\bar{P}_{k'}  \bar{P}_{k}]	=  \sum_{ij} \EE[\bar{P}_{k} \hat{P}_{k', j} ]  \EE[\bar{P}_{k'} \bar{P}_{k} ] = A_2^\prime	
+}
+We can then reduce the giant summation to
+\eqn{
+	&&  \ \mathrm{Var}[\hat{C}_{kk'}] \ = \frac{
+	 A_0   +	  A_0^\prime  - A_2 - A_2^\prime}{(N-1)^2}  =    \bigl(C_{kk}C_{k'k'} + C_{kk'}^2 \bigr) \times \frac{ \sum_{ij} B_{ij}^2  - \frac{(\sum_{ij} B_{ij})^2}{N^2}}{(N-1)^2}
+}
+
+ 
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
