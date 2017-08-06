@@ -66,8 +66,28 @@ We also show how those relate to the recent proposals of using  \textit{paired} 
 Even though most of our discussion will be about the 3D power spectrum and its covariance, we will make explicit how our results apply to other observables and their covariances, such as tomographic power spectra, bispectra, etc.
 Intermediate conclusions and take-away messages are highlighted in \textbf{bold} and summarized at the end (so go and read those if you only have a limited amount of time!).
 
+Note that we will *not* discuss how to incorporate the uncertainties of the estimated quantities (model power spectra, covariance matrices, etc) into cosmological analyses. We only aim to reduce those uncertaintes. There are lots of techniques to deal with subsequent steps and include those uncertainties in cosmological likelihoods, or even compress observables of interest \citep[\eg][]{SellentinHeavens2015, FriedrichEifler2017, Heavensetal2017}. 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Monte-Carlo covariance estimator with uncorrelated samples}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Introduction}
+
+In what follows, we will use the notation $\mathcal{N}(\mu, \Sigma)$ for a uni- or multi-variate Gaussian of mean $\mu$ and (co)variance $\Sigma$.
+
+Let us first consider a very simple example: we have a random variable $X \sim \mathcal{N}(\mu, \Sigma)$, and we want to estimate the mean $\mu$ with an estimator $\hat{\mu}$ based on $N$ realizations $X_i$ with $i=1, \cdots, N$. 
+Our choice by default is obviously the sample mean $\hat{\mu} =  N^{-1} \sum_i X_i$.
+Unfortunately, the variance of this estimator is $\mathrm{Var}[\hat{\mu}] = N^{-1}  \sigma^2 $, which scales badly. 
+
+There is a standard trick in the field of statistics: take $X_i = Y_i + Z_i$ with  $Y_i$ and $Z_i$ two realizations of $\mathcal{N}(\mu, \Sigma)$ with a non-zero cross-correlation $\mathrm{Corr}[Y_i, Z_i] = \beta$.
+In this case, we can show that  $\mathrm{Var}[\hat{\mu}] = N^{-1}  \sigma^2 (1+\beta) $. 
+
+From this trivial example we conclude that we can reduce the variance of our sample mean estimator by applying it to averaged anti-correlated draws instead of un-correlated draws. 
+Although this is fairly trivial for Gaussian random variables, this property is generally very powerful, and extends to other distributions and estimators.
+In this document we will apply this type of trick to the problem of estimating 2-pt and 4-pt correlations in cosmology.
+In particular, we will apply this property at various levels, when $X$ will sometimes be the density field, its power spectrum, or its covariance.
+We will investigate the effect of introducing correlations and how they reduce the variance of sample estimators.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Generalities}
@@ -76,10 +96,10 @@ Let's consider $\delta_k = \delta(k)$ a complex-valued Gaussian random field wit
 \equ{
 	\mathrm{Real}[\delta_k] \sim \mathcal{N}(0, P_k/2) \quad \quad \mathrm{Imag}[\delta_k] \sim \mathcal{N}(0, P_k/2) \label{eq:p_delta}
 }
-In what follows, we will use the notation $\mathcal{N}(\mu, \Sigma)$ for a uni- or multi-variate Gaussian of mean $\mu$ and (co)variance $\Sigma$.
+
 Note that the modulus $|\delta_k|^2 = \delta_k \delta_k^*$ follows a zero-mean Gaussian distribution of variance $P_k$.
 
-The $k$ index/variable will implicitly refer to the $k$th Fourier mode, since we want to establish an analogy and for instance identify $\delta$ to the cosmological matter density field. However, we remain fairly general in most of this discussion.
+The $k$ index/variable will implicitly refer to the $k$th Fourier mode, since we want to identify $\delta$ to the (initial) cosmological matter density field. Despite having cosmology in mind, we remain fairly general in most of this discussion.
 
 By construction, we set $\mathrm{Cov}[\delta_k, \delta_{k'}] = 0$ for $k\neq k'$. We also introduce a convenient reduced complex-valued random variable $x_k = \frac{\delta_k}{\sqrt{P_k/2}}$, the real and imaginary parts of which follow standard Gaussian distributions $\mathcal{N}(0, 1)$.
 
@@ -98,14 +118,14 @@ We are interested in the covariance of this estimator:
 }
 In our simple setup, we know that the $k$ modes are uncorrelated, so we have
 \eqn{
-	C_{kk'} = 2{P}^2_{k} \delta^D(k-k')
+	C_{kk'} = \frac{2{P}^2_{k}}{N_k} \delta^D(k-k')
 }
 where $ \delta^D$ is the Dirac delta. Yet, we want to estimate this covariance via Monte Carlo.
 A concrete example is the estimation of the covariance of the power spectrum in a density field evolved from Gaussian initial conditions, which is a fairly standard setup in cosmology.
 Hence, we introduce another set of draws: we repeat our experiment (drawing $N_k$ modes) $N$ times. The estimator from the $i$th draw is denoted by $\hat{P}_{k, i}$. 
 At this stage, we assume they are uncorrelated, \ie $\mathrm{Cov}[\hat{P}_{k, i}\hat{P}_{k, j}] = 0$ if $i\neq j$.
 
-In the case of galaxy survey analyses in cosmology, we would generate $N$ random Gaussian initial conditions and evolve them in an $N$-body fashion. Each 3D Fourier mode is estimated from $N_k$ modes.
+In the case of galaxy survey analyses in cosmology, we would generate $N$ random Gaussian initial conditions and evolve them in an $N$-body fashion. Each 3D Fourier mode is estimated from $N_k$ modes. In what follows we will assume that $N_k=1$ for simplicity.
 
 We turn our attention to the sample covariance estimator
 \eqn{
@@ -115,9 +135,9 @@ We can either assume that the mean is know and set $\bar{P}_{k}=P_k$, in which c
 \eqn{
 	\bar{P}_{k} = \frac{1}{N}  \sum_{i=1}^{N} \hat{P}_{k, i}
 }
-in which case we must set $\nu=N-1$. In what follows, we will consider this latter case. 
+in which case we must set $\nu=N-1$. In what follows, we will consider the latter. 
 
-We also know that if each $\hat{P}_{k, i}$ was Gaussian, $\hat{C}_{kk'} (N-1)$ would follow a Wishard distribution. It is unbiased, so the mean is the true $C_{kk'}$, and its variance is
+We also know that if each $\hat{P}_{k, i}$ were Gaussian, $\hat{C}_{kk'} (N-1)$ would follow a Wishard distribution. It is unbiased, so the mean is the true covariance $C_{kk'}$, and its variance is
 \eqn{
 	\mathrm{Cov}[\hat{C}_{ij} \hat{C}_{kl}] = \frac{C_{ij}C_{kl} + C_{ik}C_{jl}}{N-1}
 }
@@ -136,10 +156,10 @@ Second, we see that our covariance of interest is exceedingly simple in the case
 In the case of the cosmological matter power spectrum or its covariance, there are a number of theoretical models that are satisfactory over some range of scales and redshifts. 
 We absolutely want to make use of that and focus on estimating the residuals (unmodelled) part with Monte-Carlo, since this significantly reduces the number of simulations required. 
 In other words, let's not use large number of simulations just to estimate the components that we already know how to model analytically.
-Again, there are standard techniques for including incomplete theoretical models in MC estimators , and we will explore those.
+Again, there are standard techniques for including incomplete theoretical models in MC estimators, and we will explore those.
 
 Third, there are various other considerations that we may need to consider in our estimators. A good example is the effect of box size and resolution on N-body simulations and power spectrum or covariance estimators. 
-We will briefly discuss those issues below.
+We will briefly discuss those issues below. Standard techniques exist to deal with them, and they don't affect our main results.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Monte-Carlo covariance estimator correlated samples}
@@ -231,7 +251,7 @@ All of the samples have a mean $\mu$ and a variance $V$. It is pretty obvious th
 The samples within each of the packets $i=1, \cdots M$ are correlated with a correlation coefficient $\beta$. 
 There are no correlations between packets. Thus,
 \eqn{
-	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{ij}(1-\beta) + \beta\bigr) \ 
+	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{jl}(1-\beta) + \beta\bigr) \ 
 }
 Using the expressions derived above, we find
 \eqn{
@@ -253,7 +273,7 @@ The specific case of $N=2$ is known as the \textbf{antithetic estimator for the 
 
 There are two estimators for the covariance: taking $f$ as the sample covariance and $g$ as the sample mean estimator, or conversely. We will go through both. Again, we only consider correlations within (not between) packets:
 \eqn{
-	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{ij}(1-\beta) + \beta\bigr) \ 
+	\mathrm{Cov}[X_{ij}, X_{ml}] &=& \delta^K_{im} V \bigl(\delta^K_{jl}(1-\beta) + \beta\bigr) \ 
 }
 The first stratified estimator is
 \eqn{
@@ -346,7 +366,6 @@ The correlation coefficient is $\left[  \frac{B^2_{ij} + G^2_{ij}}{2}  + H^2_{ij
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Drawing the density field from anti-correlated power spectra.}
 
-
 Let us explore another strategy: rather than drawing the density field from the theory power spectrum, let's generate the density field from anti-correlated draws of the theory power spectrum. 
 In other words, we now construct power spectra such that $Q_{k, i}$ for $i=1, \cdots, N$ from the mean $P_{k}$ and with the covariance structure $\mathrm{Cov}[{Q}_{k, i}, {Q}_{k', j}] \ = \ C_{kk'} \left( \delta^K_{ij}(1-\beta_{ij}) + \beta_{ij} \right)$
 We use $Q$ instead of $P$ or even $\hat{P}$ to emphasize the fundamental difference of the scheme proposed here.
@@ -367,7 +386,7 @@ it is now
 \eqn{
 	p\bigl(|\delta_{k, p, i}|, \theta_{k, p, i}\bigr) = \frac{1}{2\pi} \delta^D\left(|\delta_{k, p, i}| - \sqrt{Q_{k, i}}\right)
 }
-\todo{Is this procedure exact and correct? See \cite{AnguloPontzen2016}}
+\todo{How well does this procedure work for Gaussian random fields?}
 
 We can check that the measured power spectra are indeed anticorrelated:
 \eqn{
@@ -524,7 +543,29 @@ This can be simplified further by adopting $G_{ij}=B_{ij}$ or $G_{ij} = 0$, but 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Summary}
 
-We have shown that:
+We have introduced three concepts that can be used to decrease the variance of simulation-based estimates in general: stratified sampling, theory proxy, and control variates. 
+Let us briefly summarise them, for a random variable $X$.
+\textbf{Stratified sampling} consists of performing correlated draws/simulations of $X$, and averaging them out in packets before (or somewhere in) the estimator of interest. 
+The \textbf{theory proxy} simply consists of using an approximate analytical solution for the observable of interest, and only using the simulations to estimate the difference with the truth. 
+The use of \textbf{control variates} consists of running an auxiliary set of simulations correlated with out main draws of $X$.
+The three techniques exploit extra sources of information and can reduce the variance of any MC estimate. 
+
+\cite{PontzenEtAl2016} introduced the use of paired simulations, identifying $X$ to the initial density field, drawing two fully anti-correlated Gaussian initial conditions (thus simply flipping the sign), then evolving them before looking at the auto- and cross-power spectra.
+They showed that the two evolved simulations are still significantly correlated, and that averaging their power spectra leads to a cancellation of some of the noise terms, which can be explained by perturbation theory to some extent. 
+In light of our findings, this is a case of stratified sampling, in fact antithetic estimators, where we exploit the anti-correlation that propagated from initial to evolved density field. 
+\cite{PontzenEtAl2016} just didn't run multiple pairs of simulations, but they did demonstrate the variance reduction with analytical arguments.
+The true stratified sampling for the mean power spectrum would indeed rely on multiple groups of anti-correlated simulations. To obtain the maximum variance reduction, one should indeed run pairs of simulations with flipped signs.
+
+\cite{AnguloPontzen2016} explored an extension: fixing the amplitude of the power spectrum to the theory, and only drawing the phases. Again, this leads to the cancellation of a few noise terms,  and it isn't surprising that this would further reduce the variance of the mean power spectrum.
+What is more interesting is that this trick is exactly what we need to use to design a stratified estimator for the covariance matrix. 
+Indeed, we have seen that we cannot identify $X$ to the density field because anti-correlations in the density will not translate into variance reduction of the covariance matrix.
+What we need to do is generate density fields that have anti-correlated power spectra. As discussed above, by using the trick of \cite{AnguloPontzen2016} we can design a good stratified estimator for the covariance matrix.
+
+We also conclude that we cannot generate anti-correlated N-body simulations in a way that optimizes both the 2-pt and 4-pt estimators (the power spectrum and its covariance).
+
+Our findings should be generally applicable to 2-pt and 4-pt functions (thus to tomographic density and shear power spectra, covariance matrices, etc). We should even be able to design simulation strategies optimized to reduce the variance of higher-order estimates such as bi- and tri-spectra.
+
+In other words, we have shown that:
 \begin{itemize}
 	\item If we can run simulations that have anti-correlated observables (\eg 3D power spectra), we can significantly reduce the variance of the sample mean and covariance estimators (estimating $P_k$ and its covariance). This is a generalization of the techniques described in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, which were partially exploiting the so-called antithetic estimator of the mean.
 	\item This variance reduction can be improved even further by considering stratified estimators, \ie running groups of correlated simulations. In the specific case of antithetic "paired" simulations as explored in \cite{PontzenEtAl2016} and \cite{AnguloPontzen2016}, we have derived a new estimator for the covariance matrix.
@@ -541,7 +582,7 @@ For this latter technique, one could in fact use an existing set of uncorrelated
 
 \todo{Write down the final expressions combining stratified estimators with theoretical predictions and control variates!}
 
-\todo{Check weinberg and coles papers}
+\todo{Check Weinberg and Coles papers}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -552,6 +593,8 @@ For this latter technique, one could in fact use an existing set of uncorrelated
 \todo{Sections about partial averaging, conditioning, Rao-Blackwellization, or importance sampling? Are those useful in this context? I don't think so but I'll check.}
 
 \todo{Discuss what changes and does not change if we consider other observables, their mean and covariance.}
+
+\todo{Precision matrices!}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliography{bib}
