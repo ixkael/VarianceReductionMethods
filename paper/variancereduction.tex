@@ -264,9 +264,13 @@ We see that the variance is cancelled if
 \eqn{
 	\beta^\mathrm{VC} \rightarrow^{>} - \ \frac{1}{N-1}
 }
-with VC as in Variance Cancellation. The arrow means that we cannot actually take $- \ \frac{1}{N-1}$ because the correlation matrix wouldn't be semi-positive definite, hence valid. However, we can approach this value as much as we can.
+with VC as in Variance Cancellation. The arrow means that we cannot actually take $- \ \frac{1}{N-1}$ because the correlation matrix wouldn't be semi-positive definite, hence valid. However, we can approach this value as much as we want.
 
 The specific case of $N=2$ is known as the \textbf{antithetic estimator for the sample mean}. In this case, the optimal choice for cancelling the variance is $\beta^\mathrm{RC}=-1$, \ie perfectly anti-correlated variables. 
+
+Conversely, imagining the correlation $\beta$ and the number of simulations $MN$ are fixed, one can infer $N$ to obtain the minimum-variance stratified estimator. 
+
+%Note that in the case of Gaussian random variables, the Gaussian covariance matrix is singular when $\beta \pm 1$, and perfectly anti-correlated samples are obtained by flipping the sign of the variable. There is only one problem: in this case, we cancel out the variable because there is indeed no variability whatsoever in the sampling. So one may  want to set $\beta$ close but not exactly $\pm1$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Two-layer stratified estimators for the covariance}
@@ -281,33 +285,26 @@ The first stratified estimator is
 }
 and its mean and the variance are
 \eqn{
-	% \mathbb{E}[\bar{X}_i] &=& \mu \\ 
-	% \mathbb{E}[\hat{X}_i] &=& V \\ 
-	% \mathrm{Var}[\hat{X}_i] &=& \frac{2V^2}{N-1} \\ 
 	\mathbb{E}[\hat{X}] 	&=&	V 	\quad \quad\mathrm{Var}[\hat{X}] = \frac{2V^2}{M(N-1)} 
 }
-The extra $ (1-\beta)$ in the definition of $\hat{X}_i$ was to make the estimator unbiased. As a consequence, and perhaps unsurprisingly, we see that there is no variance reduction since $\beta$ does not appear in $\mathrm{Var}[\hat{X}]$.
-
+The extra $ (1-\beta)$ in the definition of $\hat{X}_i$ was to make the estimator unbiased.
 The second estimator reads
 \eqn{
 	\hat{X}_i &=& \frac{1}{N}\sum_{j=1}^N X_{ij}	\quad\quad
-	\hat{X} =  \frac{1}{M-1}\sum_{i=1}^M (\hat{X}_i  - \bar{X})^2 \quad\quad
+	\hat{X} =   \frac{N}{(1 + (N-1)\beta)} \frac{1}{M-1}\sum_{i=1}^M (\hat{X}_i  - \bar{X})^2 \quad\quad
 	\bar{X} =  \frac{1}{M}\sum_{i=1}^M \hat{X}_i
 }
 
 and its mean and the variance are
 \eqn{
-	% \mathbb{E}[\hat{X}_i] &=& \mu \\ 
-	% \mathrm{Var}[\hat{X}_i] &=& V \times \frac{1 + (N-1)\beta}{N}\\ 
-	% \mathbb{E}[\bar{X}] &=& \mu \\ 
 	\mathbb{E}[\hat{X}] &=& V \quad\quad
-	 \mathrm{Var}[\hat{X}] = 2V^2 \times \frac{(1 + (N-1)\beta)^2}{N (M-1)}
+	 \mathrm{Var}[\hat{X}] = \frac{2V^2}{(M-1)N} 
 }
-In this case, there is a variance reduction! If we average out correlated $X_i$s before computing the sample variance, we can decrease its variance. In fact, we can (tend to) cancel it out by adopting $\beta^\mathrm{VC} \rightarrow^{>} - \ \frac{1}{N-1}$ for the $X_i$s in each packet. In the specific case of pairs of random variables $N=2$, we should use again use $\beta^\mathrm{VC} = -1$. This is the \textbf{antithetic sampling for the sample covariance}.
+Again, the extra $\beta$ term in the definitions is to make the variance estimator unbiased. 
 
-Note that in the case of Gaussian random variables, the covariance matrix is singular when $\beta \pm 1$, and perfectly anti-correlated samples are obtained by flipping the sign of the variable. There is only one problem: in this case, we cancel out the variable because there is indeed no variability whatsoever in the sampling. So one may  want to set $\beta$ close but not exactly $\pm1$.
+Because of the terms at the denominator of the scaling of those two covariance estimators ($(N-1)M $ and $(M-1)N$) and the absence of a $\beta$ term, it is actually. better to \textbf{not} bin them into groups (straightforward to prove), and use the standard (unstratified) sample variance estimator. 
 
-\textbf{In conclusion, to reduce to variance of the covariance matrix, we must generate anti-correlated power spectra, and use a stratified estimator.}
+\textbf{In conclusion, we can use correlations to reduce the variance of the sample mean, but not that of the variance. }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Connection to cosmology}
@@ -372,7 +369,7 @@ We use $Q$ instead of $P$ or even $\hat{P}$ to emphasize the fundamental differe
 
 We now draw the corresponding density field $\delta_{k, p, i}$ from $Q_{k, i}$. Importantly, we want it to be a Gaussian random field of mean $P_{k}$, in order to have Gaussian initial conditions for an N-body simulation. 
 Since we have drawn $Q_{k, i}$ already, we cannot construct $\delta_{k, p, i}$ from a naive Gaussian draw.
-Luckily, as described in \cite{AnguloPontzen2016}, this can be achieved by setting 
+Luckily, as described in \cite{AnguloPontzen2016} (see also \citealt{Schmittfull2015, PradaEtAl2016, DingEtAl2017}), this can be achieved by setting 
 $\delta_{k, p, i} = \sqrt{Q_{k, i}} \exp(i\theta_{k, p, i})$
 where the complex phase $\theta_{k, p, i}$ is drawn uniformly between $0$ and $2\pi$.
 Again, we perform $N_k$ independent random draws for the $k$-th mode in the $i$-th simulation.
@@ -396,7 +393,7 @@ We can check that the measured power spectra are indeed anticorrelated:
 }
 which is the desired property.
 
-\textbf{We conclude that by using this trick we can draw density fields that have anti-correlated power spectra, and therefore use the previous stratified estimator to reduce the variance of the sample covariance estimator.}
+\textbf{We conclude that by using this trick we can draw density fields that have anti-correlated power spectra, and therefore use the previous stratified estimators.}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -485,34 +482,34 @@ We will not discuss how the auxiliary simulations are constructed now - let us f
 We have 
 \eqn{
 	\mathbb{E}[\hat{D}_{k, i}] &=& {P}^\mathrm{fin}_k 	\\	
-	\mathrm{Covar}[\hat{D}_{k, i}, \hat{D}_{k', j}] &=& \underbrace{\mathrm{Covar}[\hat{P}_{k, i}, \hat{P}_{k', j}]}_{C_{kk'} B_{ij}}  + \alpha^2 \underbrace{\mathrm{Covar}[\hat{S}_{k, i}, \hat{S}_{k', j}] }_{\tilde{C}_{kk'}^\mathrm{fin} G_{ij}} + \alpha \underbrace{\mathrm{Covar}[\hat{P}_{k, i}, \hat{S}_{k', j}]}_{ R_{kk', ij}} + \alpha \underbrace{\mathrm{Covar}[\hat{S}_{k, i}, \hat{P}_{k', j}]}_{ R_{kk', ij}} 
+	\mathrm{Covar}[\hat{D}_{k, i}, \hat{D}_{k', j}] &=& \underbrace{\mathrm{Covar}[\hat{P}_{k, i}, \hat{P}_{k', j}]}_{C_{kk'} B_{ij}}  + \alpha^2 \underbrace{\mathrm{Covar}[\hat{S}_{k, i}, \hat{S}_{k', j}] }_{\tilde{C}_{kk'}^\mathrm{fin} G_{ij}} + \alpha \underbrace{\mathrm{Covar}[\hat{P}_{k, i}, \hat{S}_{k', j}]}_{ R_{kk'} S_{ij}} + \alpha \underbrace{\mathrm{Covar}[\hat{S}_{k, i}, \hat{P}_{k', j}]}_{ R_{kk'} S_{ij}} 
 }
-where we have defined the relevant covariances as before. In particular, the auxiliary simulations are correlated with $G_{ij}$ (subject to the same constraints as $B_{ij}$ as before), and $ R_{kk', ij}$ characterizes the covariance between the main and the auxiliary simulations. 
+where we have defined the relevant covariances as before. In particular, the auxiliary simulations are correlated with $G_{ij}$ (subject to the same constraints as $B_{ij}$ as before), and $ R_{kk'} S_{ij}$ characterizes the covariance between the main and the auxiliary simulations. 
 Those might need to be estimated from the simulations themselves, but may be partially estimated analytically.
 We will discuss that below.
 
 The mean and variance of the sample mean (power spectrum) estimator are
 \eqn{
 	\mathbb{E}[\bar{D}_{k}] &=& {P}^\mathrm{fin}_k 	\\	
-	\mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}] &=& \frac{1}{N^2}\sum_{i=1}^N\sum_{j=1}^N \left( C_{kk'} B_{ij} + \alpha^2  \tilde{C}_{kk'}^\mathrm{fin} G_{ij} + 2 \alpha  R_{kk', ij}  \right)
+	\mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}] &=& \frac{1}{N^2}\sum_{i=1}^N\sum_{j=1}^N \left( C_{kk'} B_{ij} + \alpha^2  \tilde{C}_{kk'}^\mathrm{fin} G_{ij} + 2 \alpha  R_{kk'} S_{ij}  \right)
 }
 By differentiating, we find that the value minimizing the variance is
 \eqn{
-	{\alpha^\mathrm{opt}_{kk'}} = \ - \ \frac{ \sum_{i=1}^N\sum_{j=1}^N  R_{kk', ij} }{ \sum_{i=1}^N\sum_{j=1}^N \tilde{C}_{kk'}^\mathrm{fin} G_{ij} }
+	{\alpha^\mathrm{opt}_{kk'}} = \ - \ \frac{ \sum_{i=1}^N\sum_{j=1}^N  R_{kk'} S_{ij} }{ \sum_{i=1}^N\sum_{j=1}^N \tilde{C}_{kk'}^\mathrm{fin} G_{ij} }
 }
-Of course those covariances/correlations might not be known and may need to be estimated directly from the data, especially because $R_{kk', ij}$ is a covariance and depends on the unknown target	 covariance ${C}_{kk'}^\mathrm{fin}$.
-\todo{Discuss how to estimate unbiased $ R_{kk', ij}$ from data.}
+Of course those covariances/correlations might not be known and may need to be estimated directly from the data, especially because $R_{kk'} S_{ij}$ is a covariance and depends on the unknown target	 covariance ${C}_{kk'}^\mathrm{fin}$.
+\todo{Discuss how to estimate unbiased $ R_{kk'} S_{ij}$ from data.}
 
-Let's derive the mean and variance of the sample covariance, using a short-cut notation $F_{kk',ij} = \mathrm{Covar}[\bar{D}_{k}, \bar{D}_{k'}]$,
+Let's derive the mean and variance of the sample covariance, using a short-cut notation $F_{kk',ij} = \mathrm{Covar}[\hat{D}_{k, i}, \hat{D}_{k', j}]$,
 \eqn{
 	\mathbb{E}[\hat{\Delta}_{kk'}] &=&  \frac{ \sum_{i}F_{kk',ii} - \frac{\sum_{ij} F_{kk',ij}}{N} } {N-1}	 \\	
-	 \mathrm{Var}\left[ \hat{\Delta}_{kk'}\right]  &=&	\frac{\sum_{ij} \bigl(F_{kk,ij}F_{k'k',ij} + F_{kk',ij}^2 \bigr) - \frac{1}{N^2}\bigl( \sum_{ij}F_{kk,ij}F_{k'k',ij} \bigr)^2 - \frac{1}{N^2}\bigl( \sum_{ij}F^2_{kk',ij} \bigr)^2 }{(N-1)^2}	
+	 \mathrm{Var}\left[ \hat{\Delta}_{kk'}\right]  &=&	\frac{\sum_{ij} \bigl(F_{kk,ij}F_{k'k',ij} + F_{kk',ij}^2 \bigr) - \frac{1}{N^2}\bigl( \sum_{ij}F_{kk,ij}F_{k'k',ij}\bigr) - \frac{1}{N^2}\bigl(  F^2_{kk',ij} \bigr)^2 }{(N-1)^2}	
 	}
-	
+	\todo{Double check!!}
 	Note that this estimator, in this current form, is biased since  $F_{kk',ij}$ contains the target unknown covariance ${C}_{kk'}^\mathrm{fin}$ and also the known auxiliary covariance $\tilde{C}_{kk'}^\mathrm{fin}$.
 	
 It would be good to understand this estimator, even in a simpler setting. For this purpose, we assume that the known covariance is close to the true one $\tilde{C}_{kk'} \approx {C}_{kk'}$, and that the cross-correlations with the auxiliary simulations are such that $R_{kk',ij} \approx {C}_{kk'} \rho_{ij}$.
-Them, we can write $F_{kk',ij} ={C}_{kk'}  \mathcal{B}_{ij}$ with $\mathcal{B}_{ij} = B_{ij} + 2 \alpha \rho_{ij} + \alpha^2 G_{ij}$. 
+Then, we can write $F_{kk',ij} ={C}_{kk'}  \mathcal{B}_{ij}$ with $\mathcal{B}_{ij} = B_{ij} + 2 \alpha \rho_{ij} + \alpha^2 G_{ij}$. 
 With those assumptions, we find
 \eqn{
 	 \mathrm{Var}\left[ \frac{\hat{\Delta}_{kk'}}{\mathbb{E}[\hat{\Delta}_{kk'}] /{C}_{kk'} }\right]  &=&  \frac{ \sum_{ij} \mathcal{B}_{ij}^2  - \frac{\left(\sum_{ij}\mathcal{B}_{ij}\right)^2}{N^2}}{ \left(\sum_i \mathcal{B}_{ii} - \frac{\sum_{ij}\mathcal{B}_{ij}}{N}\right)^2 }
@@ -530,15 +527,32 @@ Note that this is again for each pair of mode $kk'$.
 This can be simplified further by adopting $G_{ij}=B_{ij}$ or $G_{ij} = 0$, but it is probably best to study this system numerically.
 
 
+Let's understand another version of this estimator, more connected to what we are probably going to run in practice. Let's assume the only correlation is between pairs of original-auxiliary simulations, not between original-original or auxiliary-auxiliary.  So we take $B_{ij} = G_{ij} = \delta_{ij}$ and $R_{kk'} S_{ij} = R_{kk'}  \delta_{ij}$.
+In this case $F_{kk',ij} = \delta_{ij}  \left( {C}_{kk'} + \alpha^2 \tilde{C}_{kk'}^\mathrm{fin}  + 2\alpha R_{kk'} \right) = F_{kk'}$.
+\eqn{
+	\mathbb{E}[\hat{\Delta}_{kk'}] &=&  F_{kk'} 	 \\	
+	 \mathrm{Var}\left[ \hat{\Delta}_{kk'}\right]  &=&  \frac{F_{kk}F_{k'k'} + F_{kk'}^2 }{N-1}	\\
+	 	&=& \frac{1}{N-1} \Bigl[ \left( {C}_{kk}{C}_{k'k'} + {C}_{kk'}^2 \right)  + \alpha \left( 2R_{kk} {C}_{k'k'} + 2 R_{k'k'} C_{kk} + 4 {C}_{kk'}{R}_{kk'}\right) \\
+		&&  +  \alpha^2 \left( \tilde{C}_{kk}^\mathrm{fin} {C}_{k'k'} +  \tilde{C}_{k'k'}^\mathrm{fin}{C}_{kk} + {R}_{kk'}^2 + 4{R}_{kk}R_{k'k'} + 2  \tilde{C}_{kk'}^\mathrm{fin}{C}_{kk'} \right)  \\
+		&&  + \alpha^3 \left( 2R_{kk}\tilde{C}_{k'k'}^\mathrm{fin}  +R_{k'k'} \tilde{C}_{kk}^\mathrm{fin}  + 4R_{k'k'} \tilde{C}_{kk'}^\mathrm{fin}  \right)  + \alpha^4 \left( \tilde{C}_{kk}^\mathrm{fin}   \tilde{C}_{k'k'}^\mathrm{fin} + (\tilde{C}_{kk'}^\mathrm{fin})^2    \right)  \Bigr]
+	}
+
+The estimator is easily debiased by considering $\hat{\Delta}_{kk'} -   \alpha^2 \tilde{C}_{kk'}^\mathrm{fin}  - 2\alpha R_{kk'} $ which does not change its variance. Again, we cannot reduce the scaling of the estimator with $N$, but we can reduce the constant term. Compared to the theoretical prediction setup, we have  extra degrees of freedom: the choice of $\alpha$ for each $kk'$ pair. By solving the system $\partial  \mathrm{Var}[ \hat{\Delta}_{kk'}] /  \partial \alpha = 0$ numerically we could find the optimal $\alpha$ that reduces the variance of the 
+Again, we can only reduce the constant term of the variance of the sample covariance. However, there is a big difference: the reduction does not rely on our ability to model the unknown covariance, but rather to correlate simulations. It doesn't matter what the covariance is for the auxiliary simulations as long as we know it. The more we correlate the simulations the small will the variance of our the mean and covariance estimators be. This is not true for the previous section on theoretical predictions.
+
+Of course we may not know $R_{kk'}$. Often we will have to estimate it from the simulations themselves, but of course not re-use the same set for the mean and covariance estimators of interest. This may require splitting the full set of simulations.
+\todo{How to estimate that in practice?}.
+
+
 \textbf{The main conclusion is that the variance of the sample covariance estimator can indeed be reduced by using control variates, especially an auxiliary set of simulations. However, this must be studied numerically.}
 
 \todo{What is the actual reduction of the variance? What if $G_{ij}=B_{ij}$ or $G_{ij} = 0$? Can we actually study this system analytically, or should we just solve it numerically with real simulations? This would be reasonable given that all the correlation coefficients are pretty much unknown in reality.}
+
 
 \todo{Compute product and ratio control variates for comparison.}
 \todo{Discuss how to construct the auxiliary simulations with the right correlations}.
 \todo{Discuss how to extend this to multiple simulations and control variates.}
 
-\todo{Discuss how to use an existing set of uncorrelated simulations with a new set of simpler correlated simulations to reduce the variance.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Summary}
